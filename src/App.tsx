@@ -7,7 +7,7 @@ import Layout from './components/Layout'
 function App() {
   return (
     <DataProvider>
-      <Router>
+      <Router basename="/ct-viz">
         <Layout>
           <Routes>
             <Route path="/" element={<Dashboard />} />
