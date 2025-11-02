@@ -1,0 +1,56 @@
+# CT-Viz Dashboard
+
+Clinical Trial Visualizer Dashboard - Frontend component
+
+## Overview
+
+This is the frontend dashboard for CT-Viz, designed to visualize clinical trial data with interactive charts, metrics, and site-specific reports.
+
+## Features
+
+- **Data Upload**: Drag-and-drop CSV file upload with automatic data cleaning
+- **Interactive Dashboard**: 
+  - Key metrics (total patients, sites, enrollment rate, completion rate)
+  - Patient status distribution
+  - Gender and age distribution
+  - Site performance comparisons
+- **Site Reports**: Detailed per-site analysis with patient lists and visualizations
+- **Data Intelligence**: Automatic data cleaning and normalization for clinical trial datasets
+
+## Setup
+
+1. Install dependencies:
+```bash
+npm install
+```
+
+2. Start development server:
+```bash
+npm run dev
+```
+
+The dashboard will open at `http://localhost:3000`
+
+## CSV Format
+
+Upload CSV files with clinical trial data. Supported columns (case-insensitive):
+- `patientId` or `patient_id` or `id`
+- `siteId` or `site_id` or `site`
+- `age`
+- `gender` or `sex`
+- `enrollmentDate` or `enrollment_date` or `date`
+- `status` or `patientStatus`
+- `treatment` or `treatmentGroup` or `arm`
+
+## Sample Data
+
+See `sample-data.csv` for an example dataset format.
+
+## Build
+
+```bash
+npm run build
+```
+
+Build output will be in the `dist` directory.
+
