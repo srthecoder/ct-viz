@@ -90,6 +90,8 @@ const Dashboard: React.FC = () => {
     })
     .map(([name, value]) => ({ name, value }))
 
+  const insights = clinicalData.metadata?.insights
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -130,6 +132,21 @@ const Dashboard: React.FC = () => {
           color="teal"
         />
       </div>
+
+      {/* Adaptive Insights */}
+      {insights && (
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Data Insights</h3>
+          <p className="text-sm text-gray-600 mb-4">
+            {insights.rowCount} rows • {insights.columnCount} columns
+          </p>
+          <ul className="list-disc pl-5 space-y-1 text-sm text-gray-700">
+            {insights.highlights.slice(0, 5).map((h, i) => (
+              <li key={i}>{h}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

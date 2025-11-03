@@ -1,4 +1,4 @@
-import { ClinicalData, Patient, Site, DashboardMetrics } from '../types'
+import { ClinicalData, Patient, Site, DashboardMetrics, DatasetInsights, ColumnProfile, ColumnType } from '../types'
 import Papa from 'papaparse'
 
 export const parseCSV = (file: File): Promise<any[]> => {
@@ -101,6 +101,7 @@ export const extractSites = (patients: Patient[]): Site[] => {
 export const processClinicalData = (rawData: any[]): ClinicalData => {
   const patients = cleanPatientData(rawData)
   const sites = extractSites(patients)
+  const insights = analyzeDataset(rawData)
 
   return {
     patients,
@@ -111,7 +112,8 @@ export const processClinicalData = (rawData: any[]): ClinicalData => {
         ? patients.reduce((earliest, p) => 
             p.enrollmentDate < earliest.enrollmentDate ? p : earliest
           ).enrollmentDate
-        : undefined
+        : undefined,
+      insights
     }
   }
 }
@@ -213,6 +215,91 @@ export const generateSampleClinicalData = (options?: {
       trialName: 'Sample Clinical Trial',
       startDate: patients.length ? patients.reduce((earliest, p) => p.enrollmentDate < earliest.enrollmentDate ? p : earliest).enrollmentDate : undefined
     }
+  }
+}
+
+// --- Generic Dataset Profiling (adaptive insights) ---
+export const analyzeDataset = (rawData: any[]): DatasetInsights => {
+  const rows = Array.isArray(rawData) ? rawData : []
+  const rowCount = rows.length
+  const columns = new Set<string>()
+  rows.slice(0, 1000).forEach(r => Object.keys(r || {}).forEach(k => columns.add(k)))
+
+  const profiles: ColumnProfile[] = Array.from(columns).map((col) => {
+    const values = rows.map(r => (r ? r[col] : undefined)).filter(v => v !== undefined)
+    const count = values.length
+    const missing = rowCount - count
+    const uniqueSet = new Set(values.map(v => (v ?? '').toString()))
+    const unique = uniqueSet.size
+
+    // type inference
+    const numericVals = values
+      .map(v => (typeof v === 'number' ? v : parseFloat((v ?? '').toString())))
+      .filter(v => !Number.isNaN(v)) as number[]
+    const dateVals = values
+      .map(v => new Date(v))
+      .filter(d => !isNaN(d.getTime())) as Date[]
+
+    let type: ColumnType = 'text'
+    if (numericVals.length >= Math.max(5, count * 0.6)) type = 'numeric'
+    else if (dateVals.length >= Math.max(5, count * 0.6)) type = 'date'
+    else if (unique <= Math.max(20, count * 0.5)) type = 'categorical'
+
+    const sampleValues = values.slice(0, 5) as Array<string | number>
+
+    const profile: ColumnProfile = {
+      name: col,
+      type,
+      count,
+      missing,
+      unique,
+      sampleValues
+    }
+
+    if (type === 'numeric' && numericVals.length) {
+      const sorted = [...numericVals].sort((a,b) => a-b)
+      const min = sorted[0]
+      const max = sorted[sorted.length - 1]
+      const mean = sorted.reduce((s,v) => s+v, 0) / sorted.length
+      const median = sorted[Math.floor(sorted.length / 2)]
+      profile.stats = { min, max, mean: Math.round(mean * 100) / 100, median }
+    } else if (type === 'categorical') {
+      const counts = new Map<string, number>()
+      values.forEach(v => {
+        const key = (v ?? '').toString()
+        counts.set(key, (counts.get(key) || 0) + 1)
+      })
+      profile.topValues = Array.from(counts.entries())
+        .sort((a,b) => b[1]-a[1]).slice(0,5)
+        .map(([value, c]) => ({ value, count: c }))
+    } else if (type === 'date' && dateVals.length) {
+      const sorted = dateVals.sort((a,b) => a.getTime() - b.getTime())
+      profile.dateRange = { min: sorted[0].toISOString(), max: sorted[sorted.length-1].toISOString() }
+    }
+
+    return profile
+  })
+
+  // highlights
+  const highlights: string[] = []
+  const topCategorical = profiles.filter(p => p.type === 'categorical').sort((a,b) => (b.topValues?.[0]?.count || 0) - (a.topValues?.[0]?.count || 0))[0]
+  if (topCategorical?.topValues?.length) {
+    const tv = topCategorical.topValues[0]
+    highlights.push(`Most dominant category: ${topCategorical.name} → ${tv.value} (${tv.count} records)`) 
+  }
+  const wideMissing = profiles.filter(p => p.missing > rowCount * 0.2).slice(0,3)
+  if (wideMissing.length) highlights.push(`Columns with >20% missing: ${wideMissing.map(w => w.name).join(', ')}`)
+  const numericCols = profiles.filter(p => p.type === 'numeric' && p.stats)
+  if (numericCols.length) {
+    const widest = [...numericCols].sort((a,b) => ((b.stats!.max! - b.stats!.min!) - (a.stats!.max! - a.stats!.min!)))[0]
+    if (widest) highlights.push(`Widest numeric range: ${widest.name} (${widest.stats!.min}–${widest.stats!.max})`)
+  }
+
+  return {
+    rowCount,
+    columnCount: profiles.length,
+    columns: profiles,
+    highlights
   }
 }
 

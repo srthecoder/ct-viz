@@ -32,6 +32,7 @@ export interface ClinicalData {
     trialName?: string
     startDate?: string
     endDate?: string
+    insights?: DatasetInsights
   }
 }
 
@@ -48,5 +49,31 @@ export interface DashboardMetrics {
     enrollmentCount: number
     completionRate: number
   }>
+}
+
+export type ColumnType = 'numeric' | 'categorical' | 'date' | 'text'
+
+export interface ColumnProfile {
+  name: string
+  type: ColumnType
+  count: number
+  missing: number
+  unique: number
+  sampleValues: Array<string | number>
+  stats?: {
+    min?: number
+    max?: number
+    mean?: number
+    median?: number
+  }
+  topValues?: Array<{ value: string; count: number }>
+  dateRange?: { min?: string; max?: string }
+}
+
+export interface DatasetInsights {
+  rowCount: number
+  columnCount: number
+  columns: ColumnProfile[]
+  highlights: string[]
 }
 
