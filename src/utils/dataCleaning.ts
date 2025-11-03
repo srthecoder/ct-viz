@@ -163,3 +163,56 @@ export const calculateMetrics = (data: ClinicalData): DashboardMetrics => {
   }
 }
 
+// --- Sample Data Generation (for demo/testing) ---
+export const generateSampleClinicalData = (options?: {
+  numSites?: number
+  numPatients?: number
+  startDate?: string
+  months?: number
+}): ClinicalData => {
+  const numSites = options?.numSites ?? 6
+  const numPatients = options?.numPatients ?? 250
+  const months = Math.max(options?.months ?? 8, 1)
+
+  const start = options?.startDate ? new Date(options.startDate) : new Date()
+  start.setMonth(start.getMonth() - months)
+
+  const siteIds = Array.from({ length: numSites }, (_, i) => `SITE-${String(i + 1).padStart(3, '0')}`)
+  const treatments = ['Control', 'Treatment A', 'Treatment B']
+  const statuses = ['Active', 'Completed', 'Screening', 'Withdrawn']
+
+  const randomBetween = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min
+  const randomChoice = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)]
+
+  const patients: Patient[] = Array.from({ length: numPatients }, (_, idx) => {
+    const siteId = randomChoice(siteIds)
+    const age = randomBetween(18, 85)
+    const gender = randomChoice(['M', 'F', 'U'])
+    const enrollment = new Date(start)
+    enrollment.setDate(enrollment.getDate() + randomBetween(0, months * 30))
+    const status = randomChoice(statuses)
+    const treatment = randomChoice(treatments)
+
+    return {
+      patientId: `P${String(idx + 1).padStart(5, '0')}`,
+      siteId,
+      age,
+      gender,
+      enrollmentDate: enrollment.toISOString().split('T')[0],
+      status,
+      treatment
+    }
+  })
+
+  const sites = extractSites(patients)
+
+  return {
+    patients,
+    sites,
+    metadata: {
+      trialName: 'Sample Clinical Trial',
+      startDate: patients.length ? patients.reduce((earliest, p) => p.enrollmentDate < earliest.enrollmentDate ? p : earliest).enrollmentDate : undefined
+    }
+  }
+}
+

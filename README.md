@@ -44,7 +44,8 @@ Upload CSV files with clinical trial data. Supported columns (case-insensitive):
 
 ## Sample Data
 
-See `sample-data.csv` for an example dataset format.
+- Click "Use sample data" in the upload card to instantly populate the dashboard with realistic synthetic data (no CSV required).
+- For CSV structure reference, see `sample-data.csv`.
 
 ## Build
 

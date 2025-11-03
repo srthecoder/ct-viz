@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react'
-import { Upload, FileText, X } from 'lucide-react'
-import { parseCSV, processClinicalData } from '../utils/dataCleaning'
+import { Upload, FileText, X, Sparkles } from 'lucide-react'
+import { parseCSV, processClinicalData, generateSampleClinicalData } from '../utils/dataCleaning'
 import { useData } from '../context/DataContext'
 
 const DataUpload: React.FC = () => {
@@ -63,6 +63,20 @@ const DataUpload: React.FC = () => {
     }
   }
 
+  const handleUseSampleData = async () => {
+    setIsProcessing(true)
+    try {
+      const sample = generateSampleClinicalData({ numSites: 6, numPatients: 300, months: 9 })
+      loadData(sample)
+      setUploadedFileName('Sample data')
+    } catch (error) {
+      console.error('Error generating sample data:', error)
+      alert('Could not generate sample data.')
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
   return (
     <div className="mb-8">
       <div
@@ -103,16 +117,26 @@ const DataUpload: React.FC = () => {
             </button>
           </div>
         ) : (
-          <label htmlFor="file-upload" className="cursor-pointer">
-            <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <div className="text-sm text-gray-600">
-              <span className="text-primary-600 hover:text-primary-700 font-medium">
-                Click to upload
-              </span>
-              {' '}or drag and drop
-            </div>
-            <p className="text-xs text-gray-500 mt-2">CSV files only</p>
-          </label>
+          <div className="flex flex-col items-center space-y-3">
+            <label htmlFor="file-upload" className="cursor-pointer">
+              <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <div className="text-sm text-gray-600 text-center">
+                <span className="text-primary-600 hover:text-primary-700 font-medium">
+                  Click to upload
+                </span>
+                {' '}or drag and drop
+              </div>
+              <p className="text-xs text-gray-500 mt-2 text-center">CSV files only</p>
+            </label>
+            <button
+              type="button"
+              onClick={handleUseSampleData}
+              className="inline-flex items-center px-3 py-2 rounded-md text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-600"
+            >
+              <Sparkles className="h-4 w-4 mr-2" />
+              Use sample data
+            </button>
+          </div>
         )}
       </div>
 
@@ -123,6 +147,9 @@ const DataUpload: React.FC = () => {
         </p>
         <p className="text-xs text-blue-600">
           Column names are case-insensitive and will be automatically normalized
+        </p>
+        <p className="text-xs text-blue-600 mt-2">
+          Tip: Use the <span className="font-semibold">sample data</span> button to preview the dashboard without a CSV.
         </p>
       </div>
     </div>
