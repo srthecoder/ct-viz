@@ -8,14 +8,15 @@ This is the frontend dashboard for CT-Viz, designed to visualize clinical trial 
 
 ## Features
 
+- **Adaptive Data Visualization**: Automatically generates visualizations and insights based on YOUR dataset's structure - no fixed charts!
 - **Data Upload**: Drag-and-drop CSV file upload with automatic data cleaning
-- **Interactive Dashboard**: 
-  - Key metrics (total patients, sites, enrollment rate, completion rate)
-  - Patient status distribution
-  - Gender and age distribution
-  - Site performance comparisons
-- **Site Reports**: Detailed per-site analysis with patient lists and visualizations
-- **Data Intelligence**: Automatic data cleaning and normalization for clinical trial datasets
+- **Intelligent Column Detection**: 
+  - Automatically identifies column types (numeric, categorical, date, text)
+  - Generates appropriate chart types (pie, bar, histogram, line charts)
+  - Creates meaningful insights specific to your data
+- **Dynamic Metrics**: Calculates and displays metrics relevant to your dataset structure
+- **Clinical Trial Support**: If your data matches clinical trial structure (patients/sites), shows additional analysis
+- **Sample Data**: Try the dashboard instantly with sample data button
 
 ## Setup
 
@@ -33,14 +34,17 @@ The dashboard will open at `http://localhost:3000`
 
 ## CSV Format
 
-Upload CSV files with clinical trial data. Supported columns (case-insensitive):
+**The dashboard works with ANY CSV file!** It automatically:
+- Detects column types (numbers, categories, dates, text)
+- Generates appropriate visualizations
+- Creates insights specific to your data structure
+
+**For clinical trial data**, the dashboard recognizes columns like (case-insensitive):
 - `patientId` or `patient_id` or `id`
 - `siteId` or `site_id` or `site`
-- `age`
-- `gender` or `sex`
-- `enrollmentDate` or `enrollment_date` or `date`
-- `status` or `patientStatus`
-- `treatment` or `treatmentGroup` or `arm`
+- `age`, `gender` or `sex`, `enrollmentDate`, `status`, `treatment`
+
+But you can upload **any dataset** - sales data, survey results, inventory, etc. The dashboard will adapt!
 
 ## Sample Data
 

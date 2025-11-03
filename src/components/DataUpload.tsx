@@ -17,7 +17,7 @@ const DataUpload: React.FC = () => {
     try {
       const rawData = await parseCSV(file)
       const clinicalData = processClinicalData(rawData)
-      loadData(clinicalData)
+      loadData(clinicalData, rawData)
     } catch (error) {
       console.error('Error processing file:', error)
       alert('Error processing file. Please check the format and try again.')
@@ -67,7 +67,17 @@ const DataUpload: React.FC = () => {
     setIsProcessing(true)
     try {
       const sample = generateSampleClinicalData({ numSites: 6, numPatients: 300, months: 9 })
-      loadData(sample)
+      // Convert sample patients back to raw format for adaptive charts
+      const rawSampleData = sample.patients.map(p => ({
+        patientId: p.patientId,
+        siteId: p.siteId,
+        age: p.age,
+        gender: p.gender,
+        enrollmentDate: p.enrollmentDate,
+        status: p.status,
+        treatment: p.treatment
+      }))
+      loadData(sample, rawSampleData)
       setUploadedFileName('Sample data')
     } catch (error) {
       console.error('Error generating sample data:', error)

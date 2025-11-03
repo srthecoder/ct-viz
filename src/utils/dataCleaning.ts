@@ -208,12 +208,26 @@ export const generateSampleClinicalData = (options?: {
 
   const sites = extractSites(patients)
 
+  // Generate raw data for insights
+  const rawSampleData = patients.map(p => ({
+    patientId: p.patientId,
+    siteId: p.siteId,
+    age: p.age,
+    gender: p.gender,
+    enrollmentDate: p.enrollmentDate,
+    status: p.status,
+    treatment: p.treatment
+  }))
+
+  const insights = analyzeDataset(rawSampleData)
+
   return {
     patients,
     sites,
     metadata: {
       trialName: 'Sample Clinical Trial',
-      startDate: patients.length ? patients.reduce((earliest, p) => p.enrollmentDate < earliest.enrollmentDate ? p : earliest).enrollmentDate : undefined
+      startDate: patients.length ? patients.reduce((earliest, p) => p.enrollmentDate < earliest.enrollmentDate ? p : earliest).enrollmentDate : undefined,
+      insights
     }
   }
 }
