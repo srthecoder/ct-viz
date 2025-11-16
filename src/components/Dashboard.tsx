@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useData } from '../context/DataContext'
 import DataUpload from './DataUpload'
@@ -7,12 +7,114 @@ import {
   Database,
   TrendingUp,
   FileText,
-  BarChart3
+  BarChart3,
+  Filter,
+  Download,
+  X
 } from 'lucide-react'
 
 const Dashboard: React.FC = () => {
   const { clinicalData, metrics, rawData } = useData()
   const navigate = useNavigate()
+  const [filters, setFilters] = useState<{
+    site: string
+    gender: string
+    treatment: string
+  }>({
+    site: 'all',
+    gender: 'all',
+    treatment: 'all'
+  })
+
+  // Extract unique filter values
+  const filterOptions = useMemo(() => {
+    if (!rawData || rawData.length === 0) {
+      return { sites: [], genders: [], treatments: [] }
+    }
+
+    const normalizeKey = (key: string) => key.toLowerCase().trim().replace(/\s+/g, '')
+    const sites = new Set<string>()
+    const genders = new Set<string>()
+    const treatments = new Set<string>()
+
+    rawData.forEach((row) => {
+      const normalizedRow: Record<string, any> = {}
+      Object.keys(row).forEach((key) => {
+        normalizedRow[normalizeKey(key)] = row[key]
+      })
+
+      const siteId = normalizedRow['siteid'] || normalizedRow['site_id'] || normalizedRow['site']
+      const gender = normalizedRow['gender'] || normalizedRow['sex']
+      const treatment = normalizedRow['treatment'] || normalizedRow['treatmentgroup'] || normalizedRow['arm']
+
+      if (siteId) sites.add(String(siteId))
+      if (gender) genders.add(String(gender).charAt(0).toUpperCase())
+      if (treatment) treatments.add(String(treatment))
+    })
+
+    return {
+      sites: Array.from(sites).sort(),
+      genders: Array.from(genders).sort(),
+      treatments: Array.from(treatments).sort()
+    }
+  }, [rawData])
+
+  // Filter raw data based on selected filters
+  const filteredRawData = useMemo(() => {
+    if (!rawData) return []
+    if (filters.site === 'all' && filters.gender === 'all' && filters.treatment === 'all') {
+      return rawData
+    }
+
+    const normalizeKey = (key: string) => key.toLowerCase().trim().replace(/\s+/g, '')
+    
+    return rawData.filter((row) => {
+      const normalizedRow: Record<string, any> = {}
+      Object.keys(row).forEach((key) => {
+        normalizedRow[normalizeKey(key)] = row[key]
+      })
+
+      const siteId = normalizedRow['siteid'] || normalizedRow['site_id'] || normalizedRow['site']
+      const gender = normalizedRow['gender'] || normalizedRow['sex']
+      const treatment = normalizedRow['treatment'] || normalizedRow['treatmentgroup'] || normalizedRow['arm']
+
+      if (filters.site !== 'all' && String(siteId) !== filters.site) return false
+      if (filters.gender !== 'all' && String(gender).charAt(0).toUpperCase() !== filters.gender) return false
+      if (filters.treatment !== 'all' && String(treatment) !== filters.treatment) return false
+
+      return true
+    })
+  }, [rawData, filters])
+
+  const handleExportCSV = () => {
+    if (!filteredRawData || filteredRawData.length === 0) return
+
+    const headers = Object.keys(filteredRawData[0])
+    const csvContent = [
+      headers.join(','),
+      ...filteredRawData.map(row => 
+        headers.map(header => {
+          const value = row[header]
+          if (value === null || value === undefined) return ''
+          const stringValue = String(value)
+          return stringValue.includes(',') ? `"${stringValue}"` : stringValue
+        }).join(',')
+      )
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `filtered_data_${new Date().toISOString().split('T')[0]}.csv`
+    link.click()
+    URL.revokeObjectURL(link.href)
+  }
+
+  const hasActiveFilters = filters.site !== 'all' || filters.gender !== 'all' || filters.treatment !== 'all'
+
+  const clearFilters = () => {
+    setFilters({ site: 'all', gender: 'all', treatment: 'all' })
+  }
 
   if (!clinicalData || !metrics || !rawData) {
     return (
@@ -79,16 +181,88 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h2 className="text-2xl font-bold text-gray-900">Adaptive Data Dashboard</h2>
-        <DataUpload />
+        <div className="flex items-center gap-3">
+          {hasActiveFilters && (
+            <button
+              onClick={handleExportCSV}
+              className="inline-flex items-center px-4 py-2 rounded-md text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-600 transition-colors"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export CSV
+            </button>
+          )}
+          <DataUpload />
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Filter className="h-5 w-5 text-gray-500" />
+            <span className="text-sm font-medium text-gray-700">Filters:</span>
+          </div>
+          
+          <div className="flex flex-wrap gap-3">
+            <select
+              value={filters.site}
+              onChange={(e) => setFilters({ ...filters, site: e.target.value })}
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            >
+              <option value="all">All Sites</option>
+              {filterOptions.sites.map(site => (
+                <option key={site} value={site}>{site}</option>
+              ))}
+            </select>
+
+            <select
+              value={filters.gender}
+              onChange={(e) => setFilters({ ...filters, gender: e.target.value })}
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            >
+              <option value="all">All Genders</option>
+              {filterOptions.genders.map(gender => (
+                <option key={gender} value={gender}>{gender}</option>
+              ))}
+            </select>
+
+            <select
+              value={filters.treatment}
+              onChange={(e) => setFilters({ ...filters, treatment: e.target.value })}
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            >
+              <option value="all">All Treatments</option>
+              {filterOptions.treatments.map(treatment => (
+                <option key={treatment} value={treatment}>{treatment}</option>
+              ))}
+            </select>
+
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="inline-flex items-center px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+              >
+                <X className="h-4 w-4 mr-1" />
+                Clear
+              </button>
+            )}
+          </div>
+
+          {hasActiveFilters && (
+            <div className="ml-auto text-sm text-gray-600">
+              Showing {filteredRawData.length} of {rawData.length} records
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Dataset Overview */}
       {insights && (
         <div className="bg-white rounded-lg shadow-sm p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Dataset Overview</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {datasetMetrics.map((metric, idx) => (
               <MetricCard key={idx} {...metric} />
             ))}
@@ -120,19 +294,20 @@ const Dashboard: React.FC = () => {
       {/* Adaptive Visualizations */}
       {visualizableColumns.length > 0 && (
         <>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
             <h3 className="text-xl font-semibold text-gray-900">Data Visualizations</h3>
             <p className="text-sm text-gray-500">
               {visualizableColumns.length} charts generated from your data
+              {hasActiveFilters && ` (filtered: ${filteredRawData.length} records)`}
             </p>
           </div>
           
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-6">
             {visualizableColumns.map((column) => (
               <AdaptiveChart
                 key={column.name}
                 profile={column}
-                rawData={rawData}
+                rawData={filteredRawData}
               />
             ))}
           </div>
@@ -143,46 +318,48 @@ const Dashboard: React.FC = () => {
       {hasClinicalStructure && clinicalData.sites.length > 0 && (
         <div className="bg-white rounded-lg shadow-sm p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Site Performance</h3>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto -mx-6 px-6">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Site ID
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Site Name
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Enrollment
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Completion Rate
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Action
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {metrics.sitePerformance.map((site) => (
-                  <tr key={site.siteId} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <tr key={site.siteId} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {site.siteId}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {site.siteName}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {site.enrollmentCount}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {Math.round(site.completionRate)}%
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {Math.round(site.completionRate)}%
+                      </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm">
                       <button
                         onClick={() => navigate(`/site/${site.siteId}`)}
-                        className="text-primary-600 hover:text-primary-800"
+                        className="text-primary-600 hover:text-primary-800 font-medium transition-colors"
                       >
                         View Details
                       </button>

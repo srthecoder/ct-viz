@@ -1,0 +1,7 @@
+patientId,siteId,age,gender,enrollmentDate,status,treatment,notes,randomField,anotherColumn
+P001,SITE-001,45,M,2024-01-15,Active,Control,Patient compliant,xyz,123
+P002,SITE-001,52,F,2024-01-18,Completed,Treatment,No issues,abc,456
+P003,SITE-002,38,M,2024-01-20,Active,Treatment,Follow-up needed,def,789
+P004,SITE-002,61,F,2024-01-22,Active,Control,Stable,ghi,012
+P005,SITE-001,29,F,2024-01-25,Completed,Treatment,Good progress,jkl,345
+

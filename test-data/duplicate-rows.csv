@@ -1,0 +1,8 @@
+patientId,siteId,age,gender,enrollmentDate,status,treatment
+P001,SITE-001,45,M,2024-01-15,Active,Control
+P001,SITE-001,45,M,2024-01-15,Active,Control
+P002,SITE-001,52,F,2024-01-18,Completed,Treatment
+P003,SITE-002,38,M,2024-01-20,Active,Treatment
+P003,SITE-002,38,M,2024-01-20,Active,Treatment
+P004,SITE-002,61,F,2024-01-22,Active,Control
+
