@@ -94,12 +94,21 @@ export const initializeColumnMappings = (columns: string[]): ColumnMappingState[
     const normalized = normalize(column)
     
     // Find best match with priority: exact match > starts with > contains
-    // Process concepts in order, but prioritize exact matches across all concepts first
+    // IMPORTANT: Check siteId BEFORE subjectId to avoid false matches
     let bestMatch: { concept: TrialConceptDefinition; confidence: 'high' | 'medium' | 'low' } | null = null
     let exactMatch: { concept: TrialConceptDefinition } | null = null
     
+    // Sort concepts to prioritize siteId over subjectId
+    const sortedConcepts = [...TRIAL_CONCEPTS].sort((a, b) => {
+      if (a.id === 'siteId') return -1
+      if (b.id === 'siteId') return 1
+      if (a.id === 'subjectId') return 1
+      if (b.id === 'subjectId') return -1
+      return 0
+    })
+    
     // First pass: look for exact matches (highest priority)
-    for (const concept of TRIAL_CONCEPTS) {
+    for (const concept of sortedConcepts) {
       for (const keyword of concept.keywords) {
         const normalizedKeyword = normalize(keyword)
         if (normalized === normalizedKeyword) {
@@ -114,9 +123,10 @@ export const initializeColumnMappings = (columns: string[]): ColumnMappingState[
       bestMatch = { concept: exactMatch.concept, confidence: 'high' }
     } else {
       // Second pass: look for starts-with matches (medium priority)
-      for (const concept of TRIAL_CONCEPTS) {
+      for (const concept of sortedConcepts) {
         for (const keyword of concept.keywords) {
           const normalizedKeyword = normalize(keyword)
+          // Require at least 3 chars and prioritize siteId keywords
           if (normalizedKeyword.length >= 3 && normalized.startsWith(normalizedKeyword)) {
             bestMatch = { concept, confidence: 'medium' }
             break
@@ -127,10 +137,11 @@ export const initializeColumnMappings = (columns: string[]): ColumnMappingState[
       
       // Third pass: look for contains matches (low priority, but avoid very short keywords)
       if (!bestMatch) {
-        for (const concept of TRIAL_CONCEPTS) {
+        for (const concept of sortedConcepts) {
           for (const keyword of concept.keywords) {
             const normalizedKeyword = normalize(keyword)
-            // Only match if keyword is substantial (>= 4 chars) to avoid false matches like "id" in "siteid"
+            // Only match if keyword is substantial (>= 4 chars) to avoid false matches
+            // Special case: don't match "id" alone in subjectId keywords
             if (normalizedKeyword.length >= 4 && normalized.includes(normalizedKeyword)) {
               bestMatch = { concept, confidence: 'low' }
               break
@@ -141,10 +152,14 @@ export const initializeColumnMappings = (columns: string[]): ColumnMappingState[
       }
     }
 
+    // Default optional columns to "ignore" if no match found
+    const defaultConcept = bestMatch?.concept.id || 'ignore'
+    const isRequired = bestMatch?.concept.required || false
+
     return {
       columnName: column,
       displayName: column,
-      concept: bestMatch?.concept.id,
+      concept: isRequired ? bestMatch?.concept.id : defaultConcept,
       confidence: bestMatch?.confidence || 'low',
       autoMatched: Boolean(bestMatch)
     }
