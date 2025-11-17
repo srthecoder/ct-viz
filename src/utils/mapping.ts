@@ -198,21 +198,26 @@ export const applyMappingsToRows = (
   rawRows: any[],
   mappings: ColumnMappingState[]
 ): Array<Record<string, any>> => {
-  // Map original column names to their concepts and display names
+  // Build maps for efficient lookup
   const conceptByColumn = new Map<string, TrialConceptId>()
   const displayNameByColumn = new Map<string, string>()
   const ignoredColumns = new Set<string>()
+  const allOriginalColumns = new Set<string>() // Track all original column names
   
   mappings.forEach((mapping) => {
+    allOriginalColumns.add(mapping.columnName)
+    
     if (mapping.concept === 'ignore') {
       ignoredColumns.add(mapping.columnName)
     } else if (mapping.concept) {
       conceptByColumn.set(mapping.columnName, mapping.concept)
     }
     
-    // Store display name if different from original
-    if (mapping.displayName && mapping.displayName.trim() !== mapping.columnName) {
-      displayNameByColumn.set(mapping.columnName, mapping.displayName.trim())
+    // Store display name if different from original (only for unmapped columns)
+    if (!mapping.concept || mapping.concept === 'ignore') {
+      if (mapping.displayName && mapping.displayName.trim() !== mapping.columnName) {
+        displayNameByColumn.set(mapping.columnName, mapping.displayName.trim())
+      }
     }
   })
 
@@ -236,8 +241,9 @@ export const applyMappingsToRows = (
     const normalizedRow: Record<string, any> = {}
     const usedKeys = new Set<string>() // Track keys to prevent duplicates
 
+    // Process each column in the original row
     Object.entries(row ?? {}).forEach(([originalKey, value]) => {
-      // Skip ignored columns
+      // Skip ignored columns entirely
       if (ignoredColumns.has(originalKey)) {
         return
       }
@@ -245,18 +251,25 @@ export const applyMappingsToRows = (
       const concept = conceptByColumn.get(originalKey)
       
       if (concept) {
-        // Mapped column: use canonical field name as the key
+        // Mapped column: use ONLY canonical field name, NEVER the original key
         const canonicalField = conceptToCanonicalField[concept]
-        if (canonicalField && !usedKeys.has(canonicalField)) {
-          normalizedRow[canonicalField] = value
-          usedKeys.add(canonicalField)
+        if (canonicalField) {
+          // If canonical field already exists, skip (prevent duplicates)
+          if (!usedKeys.has(canonicalField)) {
+            normalizedRow[canonicalField] = value
+            usedKeys.add(canonicalField)
+          }
         }
+        // Original key is NOT added to normalizedRow - it's completely removed
       } else {
         // Unmapped column: use display name if available, otherwise original key
-        const displayName = displayNameByColumn.get(originalKey) || originalKey
-        if (!usedKeys.has(displayName)) {
-          normalizedRow[displayName] = value
-          usedKeys.add(displayName)
+        // Only preserve if it's a known column from mappings
+        if (allOriginalColumns.has(originalKey)) {
+          const displayName = displayNameByColumn.get(originalKey) || originalKey
+          if (!usedKeys.has(displayName)) {
+            normalizedRow[displayName] = value
+            usedKeys.add(displayName)
+          }
         }
       }
     })
