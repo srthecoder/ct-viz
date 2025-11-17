@@ -37,11 +37,39 @@ export const TRIAL_CONCEPTS: TrialConceptDefinition[] = [
     keywords: ['status', 'patientstatus', 'enrollmentstatus', 'state']
   },
   {
+    id: 'age',
+    label: 'Age',
+    description: 'Patient age or age bucket',
+    required: false,
+    keywords: ['age', 'patientage']
+  },
+  {
+    id: 'gender',
+    label: 'Gender / Sex',
+    description: 'Patient gender or sex',
+    required: false,
+    keywords: ['gender', 'sex']
+  },
+  {
     id: 'outcome',
     label: 'Outcome',
     description: 'Response or outcome flag',
     required: false,
     keywords: ['outcome', 'response', 'result']
+  },
+  {
+    id: 'dropout',
+    label: 'Dropout Flag',
+    description: 'Indicates whether a patient dropped out',
+    required: false,
+    keywords: ['dropout', 'discontinue', 'withdrawn']
+  },
+  {
+    id: 'adverseEvent',
+    label: 'Adverse Event',
+    description: 'Flag or description for adverse events',
+    required: false,
+    keywords: ['adverseevent', 'ae', 'seriousadverseevent']
   },
   {
     id: 'enrollmentDate',
@@ -112,7 +140,11 @@ export const applyMappingsToRows = (
     visitId: 'visit',
     treatment: 'treatment',
     status: 'status',
+    age: 'age',
+    gender: 'gender',
     outcome: 'outcome',
+    dropout: 'dropout',
+    adverseEvent: 'adverseEvent',
     enrollmentDate: 'enrollmentDate',
     ignore: ''
   }

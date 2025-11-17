@@ -1,18 +1,21 @@
 import React, { useMemo, useState } from 'react'
 import { CheckCircle2, AlertTriangle, Wand2, X, Edit3 } from 'lucide-react'
-import { ColumnMappingState, TrialConceptDefinition } from '../types'
-import {
-  TRIAL_CONCEPTS,
-  initializeColumnMappings,
-  getMissingRequiredConcepts,
-  applyMappingsToRows
-} from '../utils/mapping'
+import { ColumnMappingState, TrialConceptDefinition, TrialConceptId } from '../types'
+import { TRIAL_CONCEPTS, initializeColumnMappings, applyMappingsToRows } from '../utils/mapping'
 
 interface MappingWizardProps {
   rawData: any[]
   onConfirm: (normalizedRows: any[], mappings: ColumnMappingState[]) => void
   onCancel: () => void
 }
+
+const REQUIRED_CONCEPT_IDS: TrialConceptId[] = [
+  'subjectId',
+  'siteId',
+  'treatment',
+  'status',
+  'enrollmentDate'
+]
 
 const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCancel }) => {
   const columns = useMemo(() => {
@@ -24,15 +27,22 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
     initializeColumnMappings(columns)
   )
 
-  const missingConcepts = useMemo(() => getMissingRequiredConcepts(mappings), [mappings])
+  const missingConcepts = useMemo(() => {
+    const missingIds = REQUIRED_CONCEPT_IDS.filter(
+      (conceptId) => !mappings.some((mapping) => mapping.concept === conceptId)
+    )
+    return missingIds
+      .map((id) => TRIAL_CONCEPTS.find((concept) => concept.id === id))
+      .filter((concept): concept is TrialConceptDefinition => Boolean(concept))
+  }, [mappings])
   const canProceed = missingConcepts.length === 0
 
   const requiredConceptOptions = useMemo(
-    () => TRIAL_CONCEPTS.filter((concept) => concept.required),
+    () => TRIAL_CONCEPTS.filter((concept) => REQUIRED_CONCEPT_IDS.includes(concept.id)),
     []
   )
   const optionalConceptOptions = useMemo(
-    () => TRIAL_CONCEPTS.filter((concept) => !concept.required && concept.id !== 'ignore'),
+    () => TRIAL_CONCEPTS.filter((concept) => !REQUIRED_CONCEPT_IDS.includes(concept.id) && concept.id !== 'ignore'),
     []
   )
   const ignoreConcept = TRIAL_CONCEPTS.find((concept) => concept.id === 'ignore')
@@ -141,8 +151,9 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
                           type="text"
                           value={mapping.displayName}
                           onChange={(event) => handleColumnRename(mapping.columnName, event.target.value)}
-                          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
                           placeholder="Enter column name"
+                          spellCheck={false}
                         />
                         <Edit3 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300" />
                       </div>
@@ -190,7 +201,10 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
                             </span>
                           )}
                           {mapping.autoMatched && (
-                            <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-blue-600">
+                            <span
+                              className="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-blue-600"
+                              title="Auto-suggested based on header similarity"
+                            >
                               <Wand2 className="mr-1 h-3 w-3" />
                               Auto-matched ({mapping.confidence})
                             </span>
