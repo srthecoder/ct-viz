@@ -198,21 +198,25 @@ export const applyMappingsToRows = (
   rawRows: any[],
   mappings: ColumnMappingState[]
 ): Array<Record<string, any>> => {
+  // Map original column names to their concepts and display names
   const conceptByColumn = new Map<string, TrialConceptId>()
-  const aliasByColumn = new Map<string, string>()
+  const displayNameByColumn = new Map<string, string>()
+  const ignoredColumns = new Set<string>()
+  
   mappings.forEach((mapping) => {
-    if (mapping.concept && mapping.concept !== 'ignore') {
+    if (mapping.concept === 'ignore') {
+      ignoredColumns.add(mapping.columnName)
+    } else if (mapping.concept) {
       conceptByColumn.set(mapping.columnName, mapping.concept)
     }
-    if (
-      mapping.displayName &&
-      mapping.displayName.trim() &&
-      mapping.displayName.trim() !== mapping.columnName
-    ) {
-      aliasByColumn.set(mapping.columnName, mapping.displayName.trim())
+    
+    // Store display name if different from original
+    if (mapping.displayName && mapping.displayName.trim() !== mapping.columnName) {
+      displayNameByColumn.set(mapping.columnName, mapping.displayName.trim())
     }
   })
 
+  // Map concepts to canonical field names (used as final keys)
   const conceptToCanonicalField: Record<TrialConceptId, string> = {
     subjectId: 'patientId',
     siteId: 'siteId',
@@ -230,17 +234,30 @@ export const applyMappingsToRows = (
 
   return rawRows.map((row) => {
     const normalizedRow: Record<string, any> = {}
+    const usedKeys = new Set<string>() // Track keys to prevent duplicates
 
-    Object.entries(row ?? {}).forEach(([key, value]) => {
-      const alias = aliasByColumn.get(key)
-      const displayKey = alias || key || 'Column'
-      normalizedRow[displayKey] = value
+    Object.entries(row ?? {}).forEach(([originalKey, value]) => {
+      // Skip ignored columns
+      if (ignoredColumns.has(originalKey)) {
+        return
+      }
 
-      const concept = conceptByColumn.get(key)
-      if (!concept) return
-      const canonicalField = conceptToCanonicalField[concept]
-      if (canonicalField) {
-        normalizedRow[canonicalField] = value
+      const concept = conceptByColumn.get(originalKey)
+      
+      if (concept) {
+        // Mapped column: use canonical field name as the key
+        const canonicalField = conceptToCanonicalField[concept]
+        if (canonicalField && !usedKeys.has(canonicalField)) {
+          normalizedRow[canonicalField] = value
+          usedKeys.add(canonicalField)
+        }
+      } else {
+        // Unmapped column: use display name if available, otherwise original key
+        const displayName = displayNameByColumn.get(originalKey) || originalKey
+        if (!usedKeys.has(displayName)) {
+          normalizedRow[displayName] = value
+          usedKeys.add(displayName)
+        }
       }
     })
 
