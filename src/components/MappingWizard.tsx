@@ -102,8 +102,6 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
             <tbody className="divide-y divide-gray-100">
               {mappings.map((mapping) => {
                 const conceptDefinition = TRIAL_CONCEPTS.find((concept) => concept.id === mapping.concept)
-                const isMissingRequired =
-                  conceptDefinition?.required && !mapping.concept
 
                 return (
                   <tr key={mapping.columnName} className="hover:bg-gray-50 transition-colors">
