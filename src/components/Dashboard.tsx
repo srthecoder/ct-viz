@@ -26,7 +26,8 @@ const Dashboard: React.FC = () => {
     treatment: 'all'
   })
 
-  // Extract unique filter values
+  // Extract unique filter values dynamically from rawData
+  // This runs whenever rawData changes, making filter options dynamic
   const filterOptions = useMemo(() => {
     if (!rawData || rawData.length === 0) {
       return { sites: [], genders: [], treatments: [] }
@@ -38,15 +39,30 @@ const Dashboard: React.FC = () => {
     const treatments = new Set<string>()
 
     rawData.forEach((row) => {
-      const normalizedRow: Record<string, any> = {}
-      Object.keys(row).forEach((key) => {
-        normalizedRow[normalizeKey(key)] = row[key]
-      })
+      // Try canonical field names first (from mapping wizard transformation)
+      let siteId = row['siteId'] || row['siteid']
+      let gender = row['gender'] || row['sex']
+      let treatment = row['treatment'] || row['treatmentgroup'] || row['arm'] || row['treatmentGroup']
+      
+      // Fallback to normalized lookup if canonical names not found
+      if (!siteId || !gender || !treatment) {
+        const normalizedRow: Record<string, any> = {}
+        Object.keys(row).forEach((key) => {
+          normalizedRow[normalizeKey(key)] = row[key]
+        })
+        
+        if (!siteId) {
+          siteId = normalizedRow['siteid'] || normalizedRow['site_id'] || normalizedRow['site']
+        }
+        if (!gender) {
+          gender = normalizedRow['gender'] || normalizedRow['sex']
+        }
+        if (!treatment) {
+          treatment = normalizedRow['treatment'] || normalizedRow['treatmentgroup'] || normalizedRow['arm']
+        }
+      }
 
-      const siteId = normalizedRow['siteid'] || normalizedRow['site_id'] || normalizedRow['site']
-      const gender = normalizedRow['gender'] || normalizedRow['sex']
-      const treatment = normalizedRow['treatment'] || normalizedRow['treatmentgroup'] || normalizedRow['arm']
-
+      // Add unique values to sets
       if (siteId) sites.add(String(siteId))
       if (gender) genders.add(String(gender).charAt(0).toUpperCase())
       if (treatment) treatments.add(String(treatment))
@@ -59,7 +75,7 @@ const Dashboard: React.FC = () => {
     }
   }, [rawData])
 
-  // Filter raw data based on selected filters
+  // Filter raw data dynamically based on selected filters
   const filteredRawData = useMemo(() => {
     if (!rawData) return []
     if (filters.site === 'all' && filters.gender === 'all' && filters.treatment === 'all') {
@@ -69,15 +85,30 @@ const Dashboard: React.FC = () => {
     const normalizeKey = (key: string) => key.toLowerCase().trim().replace(/\s+/g, '')
     
     return rawData.filter((row) => {
-      const normalizedRow: Record<string, any> = {}
-      Object.keys(row).forEach((key) => {
-        normalizedRow[normalizeKey(key)] = row[key]
-      })
+      // Try canonical field names first (from mapping wizard transformation)
+      let siteId = row['siteId'] || row['siteid']
+      let gender = row['gender'] || row['sex']
+      let treatment = row['treatment'] || row['treatmentgroup'] || row['arm'] || row['treatmentGroup']
+      
+      // Fallback to normalized lookup if canonical names not found
+      if (!siteId || !gender || !treatment) {
+        const normalizedRow: Record<string, any> = {}
+        Object.keys(row).forEach((key) => {
+          normalizedRow[normalizeKey(key)] = row[key]
+        })
+        
+        if (!siteId) {
+          siteId = normalizedRow['siteid'] || normalizedRow['site_id'] || normalizedRow['site']
+        }
+        if (!gender) {
+          gender = normalizedRow['gender'] || normalizedRow['sex']
+        }
+        if (!treatment) {
+          treatment = normalizedRow['treatment'] || normalizedRow['treatmentgroup'] || normalizedRow['arm']
+        }
+      }
 
-      const siteId = normalizedRow['siteid'] || normalizedRow['site_id'] || normalizedRow['site']
-      const gender = normalizedRow['gender'] || normalizedRow['sex']
-      const treatment = normalizedRow['treatment'] || normalizedRow['treatmentgroup'] || normalizedRow['arm']
-
+      // Apply filters
       if (filters.site !== 'all' && String(siteId) !== filters.site) return false
       if (filters.gender !== 'all' && String(gender).charAt(0).toUpperCase() !== filters.gender) return false
       if (filters.treatment !== 'all' && String(treatment) !== filters.treatment) return false
@@ -209,7 +240,7 @@ const Dashboard: React.FC = () => {
             <select
               value={filters.site}
               onChange={(e) => setFilters({ ...filters, site: e.target.value })}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
               <option value="all">All Sites</option>
               {filterOptions.sites.map(site => (
@@ -220,7 +251,7 @@ const Dashboard: React.FC = () => {
             <select
               value={filters.gender}
               onChange={(e) => setFilters({ ...filters, gender: e.target.value })}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
               <option value="all">All Genders</option>
               {filterOptions.genders.map(gender => (
@@ -231,7 +262,7 @@ const Dashboard: React.FC = () => {
             <select
               value={filters.treatment}
               onChange={(e) => setFilters({ ...filters, treatment: e.target.value })}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
               <option value="all">All Treatments</option>
               {filterOptions.treatments.map(treatment => (

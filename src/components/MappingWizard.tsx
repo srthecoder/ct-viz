@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react'
-import { CheckCircle2, AlertTriangle, Wand2, X, Edit3 } from 'lucide-react'
+import { AlertTriangle, X } from 'lucide-react'
 import { ColumnMappingState, TrialConceptDefinition, TrialConceptId } from '../types'
 import { TRIAL_CONCEPTS, initializeColumnMappings, applyMappingsToRows, getUnmappedRequiredColumns } from '../utils/mapping'
 
@@ -53,7 +53,7 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
     []
   )
   const optionalConceptOptions = useMemo(
-    () => TRIAL_CONCEPTS.filter((concept) => !REQUIRED_CONCEPT_IDS.includes(concept.id) && concept.id !== 'ignore'),
+    () => TRIAL_CONCEPTS.filter((concept) => !REQUIRED_CONCEPT_IDS.includes(concept.id) && concept.id !== 'ignore' && concept.id !== 'dropout'),
     []
   )
 
@@ -151,7 +151,6 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
           </div>
         ) : (
           <div className="flex items-center space-x-2 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
-            <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
             <span>All required concepts are mapped. Optional columns can stay unmapped or set to "Other / Ignore".</span>
           </div>
         )}
@@ -160,91 +159,54 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
           <table className="min-w-full divide-y divide-gray-200 text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-2 text-left font-medium text-gray-600">CSV Column</th>
-                <th className="px-4 py-2 text-left font-medium text-gray-600">Trial Concept</th>
-                <th className="px-4 py-2 text-left font-medium text-gray-600">Status</th>
+                <th className="px-4 py-2 text-left font-medium text-gray-600">Column Name & Concept</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {mappings.map((mapping) => {
-                const conceptDefinition = TRIAL_CONCEPTS.find((concept) => concept.id === mapping.concept)
-
                 return (
                   <tr key={mapping.columnName} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3">
-                      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">
-                        Column Label
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={mapping.displayName}
-                          onChange={(event) => handleColumnRename(mapping.columnName, event.target.value)}
-                          onFocus={() => handleColumnRenameFocus(mapping.columnName)}
-                          onBlur={handleColumnRenameBlur}
-                          className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                          placeholder="Enter column name"
-                          spellCheck={false}
-                        />
-                        <Edit3 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300 pointer-events-none" />
-                      </div>
-                      {editingColumn !== mapping.columnName && (
-                        <p className="text-xs text-gray-500 mt-1">
-                          Original: <span className="font-medium">{mapping.columnName || 'Unnamed column'}</span>
-                        </p>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <select
-                        className={`block w-full rounded-md border ${
-                          !mapping.concept || mapping.concept === 'ignore'
-                            ? 'border-gray-300'
-                            : REQUIRED_CONCEPT_IDS.includes(mapping.concept as TrialConceptId)
-                            ? 'border-gray-300'
-                            : 'border-gray-300'
-                        } px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500`}
-                        value={mapping.concept || 'ignore'}
-                        onChange={(event) => handleConceptChange(mapping.columnName, event.target.value === 'ignore' ? undefined : event.target.value)}
-                      >
-                        <option value="ignore">Other / Ignore</option>
-                        {requiredConceptOptions.length > 0 && (
-                          <optgroup label="Required">
-                            {requiredConceptOptions.map(renderConceptOption)}
-                          </optgroup>
-                        )}
-                        {optionalConceptOptions.length > 0 && (
-                          <optgroup label="Optional">
-                            {optionalConceptOptions.map(renderConceptOption)}
-                          </optgroup>
-                        )}
-                      </select>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-gray-600">
-                      {mapping.concept && mapping.concept !== 'ignore' ? (
-                        <div className="flex items-center space-x-2">
-                          <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-1 text-emerald-700">
-                            <CheckCircle2 className="mr-1 h-3 w-3" />
-                            {conceptDefinition?.label}
-                          </span>
-                          {mapping.autoMatched && (
-                            <span
-                              className="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-blue-600"
-                              title="Auto-suggested based on header similarity"
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1">
+                            <input
+                              type="text"
+                              value={mapping.displayName}
+                              onChange={(event) => handleColumnRename(mapping.columnName, event.target.value)}
+                              onFocus={() => handleColumnRenameFocus(mapping.columnName)}
+                              onBlur={handleColumnRenameBlur}
+                              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              placeholder="Enter column name"
+                              spellCheck={false}
+                            />
+                          </div>
+                          <div className="w-64">
+                            <select
+                              className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              value={mapping.concept || 'ignore'}
+                              onChange={(event) => handleConceptChange(mapping.columnName, event.target.value === 'ignore' ? undefined : event.target.value)}
                             >
-                              <Wand2 className="h-3 w-3" />
-                            </span>
-                          )}
+                              <option value="ignore">Other / Ignore</option>
+                              {requiredConceptOptions.length > 0 && (
+                                <optgroup label="Required">
+                                  {requiredConceptOptions.map(renderConceptOption)}
+                                </optgroup>
+                              )}
+                              {optionalConceptOptions.length > 0 && (
+                                <optgroup label="Optional">
+                                  {optionalConceptOptions.map(renderConceptOption)}
+                                </optgroup>
+                              )}
+                            </select>
+                          </div>
                         </div>
-                      ) : mapping.concept === 'ignore' ? (
-                        <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-gray-600">
-                          Ignored
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-1 text-amber-700">
-                          <AlertTriangle className="mr-1 h-3 w-3" />
-                          Needs selection
-                        </span>
-                      )}
+                        {editingColumn !== mapping.columnName && (
+                          <p className="text-xs text-gray-500">
+                            Original: <span className="font-medium">{mapping.columnName || 'Unnamed column'}</span>
+                          </p>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 )
