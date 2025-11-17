@@ -30,7 +30,7 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
 
   const missingConcepts = useMemo(() => {
     const missingIds = REQUIRED_CONCEPT_IDS.filter(
-      (conceptId) => !mappings.some((mapping) => mapping.concept === conceptId && mapping.concept !== 'ignore')
+      (conceptId) => !mappings.some((mapping) => mapping.concept === conceptId && mapping.concept !== 'ignore' && mapping.concept !== 'other')
     )
     return missingIds
       .map((id) => TRIAL_CONCEPTS.find((concept) => concept.id === id))
@@ -42,8 +42,9 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
   }, [mappings])
   
   const canProceed = useMemo(() => {
+    // Only check required concepts - optional columns can be unmapped, ignored, or set to "other"
     const allRequiredMapped = REQUIRED_CONCEPT_IDS.every(
-      (conceptId) => mappings.some((mapping) => mapping.concept === conceptId && mapping.concept !== 'ignore')
+      (conceptId) => mappings.some((mapping) => mapping.concept === conceptId && mapping.concept !== 'ignore' && mapping.concept !== 'other')
     )
     return allRequiredMapped
   }, [mappings])
@@ -53,7 +54,7 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
     []
   )
   const optionalConceptOptions = useMemo(
-    () => TRIAL_CONCEPTS.filter((concept) => !REQUIRED_CONCEPT_IDS.includes(concept.id) && concept.id !== 'dropout'),
+    () => TRIAL_CONCEPTS.filter((concept) => !REQUIRED_CONCEPT_IDS.includes(concept.id) && concept.id !== 'dropout' && concept.id !== 'ignore' && concept.id !== 'other'),
     []
   )
 
@@ -151,7 +152,7 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
           </div>
         ) : (
           <div className="flex items-center space-x-2 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
-            <span>All required concepts are mapped. Optional columns can stay unmapped or set to "Other / Ignore".</span>
+            <span>All required concepts are mapped. You can proceed to the next step. Optional columns can be mapped, set to "Other" (preserved with custom name), or "Ignore" (dropped).</span>
           </div>
         )}
 
@@ -166,8 +167,9 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
             <tbody className="divide-y divide-gray-100">
               {mappings.map((mapping) => {
                 const conceptDefinition = TRIAL_CONCEPTS.find((concept) => concept.id === mapping.concept)
-                const hasConcept = mapping.concept && mapping.concept !== 'ignore'
-                const isOther = mapping.concept === 'ignore'
+                const hasConcept = mapping.concept && mapping.concept !== 'ignore' && mapping.concept !== 'other'
+                const isOther = mapping.concept === 'other'
+                const isIgnored = mapping.concept === 'ignore'
                 
                 return (
                   <tr key={mapping.columnName} className="hover:bg-gray-50 transition-colors">
@@ -207,8 +209,21 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
                             </div>
                           ) : isOther ? (
                             <div className="flex items-center gap-2 flex-1">
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-purple-50 text-purple-700 text-sm font-medium border border-purple-200">
+                                Other
+                                <button
+                                  onClick={() => handleConceptChange(mapping.columnName, undefined)}
+                                  className="hover:bg-purple-100 rounded-full p-0.5 transition-colors"
+                                  aria-label="Remove concept"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </span>
+                            </div>
+                          ) : isIgnored ? (
+                            <div className="flex items-center gap-2 flex-1">
                               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-gray-50 text-gray-700 text-sm font-medium border border-gray-200">
-                                Other / Ignore
+                                Ignore
                                 <button
                                   onClick={() => handleConceptChange(mapping.columnName, undefined)}
                                   className="hover:bg-gray-100 rounded-full p-0.5 transition-colors"
@@ -236,7 +251,8 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
                                     {optionalConceptOptions.map(renderConceptOption)}
                                   </optgroup>
                                 )}
-                                <option value="ignore">Other / Ignore</option>
+                                <option value="other">Other</option>
+                                <option value="ignore">Ignore</option>
                               </select>
                               <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                             </div>
@@ -256,8 +272,12 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
                           </span>
                         )
                       ) : isOther ? (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-gray-50 text-gray-700 border border-gray-200">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200">
                           Other
+                        </span>
+                      ) : isIgnored ? (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-gray-50 text-gray-700 border border-gray-200">
+                          Ignore
                         </span>
                       ) : (
                         <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">

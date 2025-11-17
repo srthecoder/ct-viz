@@ -73,8 +73,15 @@ export const TRIAL_CONCEPTS: TrialConceptDefinition[] = [
   },
   {
     id: 'ignore',
-    label: 'Other / Ignore',
-    description: 'Column will not be used in downstream dashboards',
+    label: 'Ignore',
+    description: 'Column will be dropped and not used in downstream dashboards',
+    required: false,
+    keywords: []
+  },
+  {
+    id: 'other',
+    label: 'Other',
+    description: 'Column will be preserved with the edited name and included in dashboards',
     required: false,
     keywords: []
   }
@@ -145,14 +152,14 @@ export const initializeColumnMappings = (columns: string[]): ColumnMappingState[
       }
     }
 
-    // Default optional columns to "ignore" if no match found
-    const defaultConcept = bestMatch?.concept.id || 'ignore'
+    // Default optional columns to undefined (unmapped) if no match found
+    // User must explicitly choose "Ignore" or "Other" or map to a concept
     const isRequired = bestMatch?.concept.required || false
 
     return {
       columnName: column,
       displayName: column,
-      concept: isRequired ? bestMatch?.concept.id : defaultConcept,
+      concept: isRequired ? bestMatch?.concept.id : (bestMatch?.concept.id || undefined),
       confidence: bestMatch?.confidence || 'low',
       autoMatched: Boolean(bestMatch)
     }
@@ -194,14 +201,18 @@ export const applyMappingsToRows = (
   // Build maps for efficient lookup
   const conceptByColumn = new Map<string, TrialConceptId>()
   const displayNameByColumn = new Map<string, string>()
-  const otherColumns = new Map<string, string>() // Columns mapped to "Other / Ignore" - preserve with display name
+  const otherColumns = new Map<string, string>() // Columns mapped to "Other" - preserve with display name
+  const ignoredColumns = new Set<string>() // Columns mapped to "Ignore" - will be dropped
   const allOriginalColumns = new Set<string>() // Track all original column names
   
   mappings.forEach((mapping) => {
     allOriginalColumns.add(mapping.columnName)
     
     if (mapping.concept === 'ignore') {
-      // For "Other / Ignore", preserve the column with its display name
+      // For "Ignore", mark column to be dropped
+      ignoredColumns.add(mapping.columnName)
+    } else if (mapping.concept === 'other') {
+      // For "Other", preserve the column with its display name
       const displayName = mapping.displayName && mapping.displayName.trim() 
         ? mapping.displayName.trim() 
         : mapping.columnName
@@ -210,8 +221,8 @@ export const applyMappingsToRows = (
       conceptByColumn.set(mapping.columnName, mapping.concept)
     }
     
-    // Store display name if different from original (only for unmapped columns)
-    if (!mapping.concept || mapping.concept === 'ignore') {
+    // Store display name if different from original (for unmapped or "other" columns)
+    if (!mapping.concept || mapping.concept === 'other') {
       if (mapping.displayName && mapping.displayName.trim() !== mapping.columnName) {
         displayNameByColumn.set(mapping.columnName, mapping.displayName.trim())
       }
@@ -231,7 +242,8 @@ export const applyMappingsToRows = (
     dropout: 'dropout',
     adverseEvent: 'adverseEvent',
     enrollmentDate: 'enrollmentDate',
-    ignore: ''
+    ignore: '',
+    other: ''
   }
 
   return rawRows.map((row) => {
@@ -242,6 +254,11 @@ export const applyMappingsToRows = (
     Object.entries(row ?? {}).forEach(([originalKey, value]) => {
       // Skip if not a known column from mappings
       if (!allOriginalColumns.has(originalKey)) {
+        return
+      }
+
+      // Skip ignored columns entirely
+      if (ignoredColumns.has(originalKey)) {
         return
       }
 
@@ -259,7 +276,7 @@ export const applyMappingsToRows = (
         }
         // Original key is NOT added to normalizedRow - it's completely removed
       } else if (otherColumns.has(originalKey)) {
-        // Column mapped to "Other / Ignore": preserve with display name
+        // Column mapped to "Other": preserve with display name
         const displayName = otherColumns.get(originalKey)!
         if (!usedKeys.has(displayName)) {
           normalizedRow[displayName] = value

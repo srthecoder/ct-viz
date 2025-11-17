@@ -90,6 +90,7 @@ export type TrialConceptId =
   | 'adverseEvent'
   | 'enrollmentDate'
   | 'ignore'
+  | 'other'
 
 export interface TrialConceptDefinition {
   id: TrialConceptId
