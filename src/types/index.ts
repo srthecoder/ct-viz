@@ -83,7 +83,11 @@ export type TrialConceptId =
   | 'visitId'
   | 'treatment'
   | 'status'
+  | 'age'
+  | 'gender'
   | 'outcome'
+  | 'dropout'
+  | 'adverseEvent'
   | 'enrollmentDate'
   | 'ignore'
 
