@@ -53,7 +53,7 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
     []
   )
   const optionalConceptOptions = useMemo(
-    () => TRIAL_CONCEPTS.filter((concept) => !REQUIRED_CONCEPT_IDS.includes(concept.id) && concept.id !== 'ignore' && concept.id !== 'dropout'),
+    () => TRIAL_CONCEPTS.filter((concept) => !REQUIRED_CONCEPT_IDS.includes(concept.id) && concept.id !== 'dropout'),
     []
   )
 
@@ -63,7 +63,7 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
         mapping.columnName === columnName
           ? {
               ...mapping,
-              concept: conceptId ? (conceptId as ColumnMappingState['concept']) : 'ignore',
+              concept: conceptId ? (conceptId as ColumnMappingState['concept']) : undefined,
               autoMatched: false
             }
           : mapping
@@ -167,6 +167,7 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
               {mappings.map((mapping) => {
                 const conceptDefinition = TRIAL_CONCEPTS.find((concept) => concept.id === mapping.concept)
                 const hasConcept = mapping.concept && mapping.concept !== 'ignore'
+                const isOther = mapping.concept === 'ignore'
                 
                 return (
                   <tr key={mapping.columnName} className="hover:bg-gray-50 transition-colors">
@@ -204,14 +205,27 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
                                 </button>
                               </span>
                             </div>
+                          ) : isOther ? (
+                            <div className="flex items-center gap-2 flex-1">
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-gray-50 text-gray-700 text-sm font-medium border border-gray-200">
+                                Other / Ignore
+                                <button
+                                  onClick={() => handleConceptChange(mapping.columnName, undefined)}
+                                  className="hover:bg-gray-100 rounded-full p-0.5 transition-colors"
+                                  aria-label="Remove concept"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </span>
+                            </div>
                           ) : (
                             <div className="relative flex-1">
                               <select
                                 className="appearance-none w-full rounded-md border border-gray-300 bg-white px-3 py-2 pr-8 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                value={mapping.concept || 'ignore'}
-                                onChange={(event) => handleConceptChange(mapping.columnName, event.target.value === 'ignore' ? undefined : event.target.value)}
+                                value={mapping.concept || ''}
+                                onChange={(event) => handleConceptChange(mapping.columnName, event.target.value === '' ? undefined : event.target.value)}
                               >
-                                <option value="ignore">Select concept...</option>
+                                <option value="">Select concept...</option>
                                 {requiredConceptOptions.length > 0 && (
                                   <optgroup label="Required">
                                     {requiredConceptOptions.map(renderConceptOption)}
@@ -222,6 +236,7 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
                                     {optionalConceptOptions.map(renderConceptOption)}
                                   </optgroup>
                                 )}
+                                <option value="ignore">Other / Ignore</option>
                               </select>
                               <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                             </div>
@@ -240,6 +255,10 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
                             Mapped
                           </span>
                         )
+                      ) : isOther ? (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-gray-50 text-gray-700 border border-gray-200">
+                          Other
+                        </span>
                       ) : (
                         <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
                           Not found

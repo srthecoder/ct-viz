@@ -58,13 +58,6 @@ export const TRIAL_CONCEPTS: TrialConceptDefinition[] = [
     keywords: ['outcome', 'response', 'result']
   },
   {
-    id: 'dropout',
-    label: 'Dropout Flag',
-    description: 'Indicates whether a patient dropped out',
-    required: false,
-    keywords: ['dropout', 'discontinue', 'withdrawn']
-  },
-  {
     id: 'adverseEvent',
     label: 'Adverse Event',
     description: 'Flag or description for adverse events',
@@ -201,14 +194,18 @@ export const applyMappingsToRows = (
   // Build maps for efficient lookup
   const conceptByColumn = new Map<string, TrialConceptId>()
   const displayNameByColumn = new Map<string, string>()
-  const ignoredColumns = new Set<string>()
+  const otherColumns = new Map<string, string>() // Columns mapped to "Other / Ignore" - preserve with display name
   const allOriginalColumns = new Set<string>() // Track all original column names
   
   mappings.forEach((mapping) => {
     allOriginalColumns.add(mapping.columnName)
     
     if (mapping.concept === 'ignore') {
-      ignoredColumns.add(mapping.columnName)
+      // For "Other / Ignore", preserve the column with its display name
+      const displayName = mapping.displayName && mapping.displayName.trim() 
+        ? mapping.displayName.trim() 
+        : mapping.columnName
+      otherColumns.set(mapping.columnName, displayName)
     } else if (mapping.concept) {
       conceptByColumn.set(mapping.columnName, mapping.concept)
     }
@@ -243,8 +240,8 @@ export const applyMappingsToRows = (
 
     // Process each column in the original row
     Object.entries(row ?? {}).forEach(([originalKey, value]) => {
-      // Skip ignored columns entirely
-      if (ignoredColumns.has(originalKey)) {
+      // Skip if not a known column from mappings
+      if (!allOriginalColumns.has(originalKey)) {
         return
       }
 
@@ -261,15 +258,19 @@ export const applyMappingsToRows = (
           }
         }
         // Original key is NOT added to normalizedRow - it's completely removed
+      } else if (otherColumns.has(originalKey)) {
+        // Column mapped to "Other / Ignore": preserve with display name
+        const displayName = otherColumns.get(originalKey)!
+        if (!usedKeys.has(displayName)) {
+          normalizedRow[displayName] = value
+          usedKeys.add(displayName)
+        }
       } else {
         // Unmapped column: use display name if available, otherwise original key
-        // Only preserve if it's a known column from mappings
-        if (allOriginalColumns.has(originalKey)) {
-          const displayName = displayNameByColumn.get(originalKey) || originalKey
-          if (!usedKeys.has(displayName)) {
-            normalizedRow[displayName] = value
-            usedKeys.add(displayName)
-          }
+        const displayName = displayNameByColumn.get(originalKey) || originalKey
+        if (!usedKeys.has(displayName)) {
+          normalizedRow[displayName] = value
+          usedKeys.add(displayName)
         }
       }
     })
