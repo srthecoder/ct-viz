@@ -77,3 +77,27 @@ export interface DatasetInsights {
   highlights: string[]
 }
 
+export type TrialConceptId =
+  | 'subjectId'
+  | 'siteId'
+  | 'visitId'
+  | 'treatment'
+  | 'status'
+  | 'outcome'
+  | 'enrollmentDate'
+
+export interface TrialConceptDefinition {
+  id: TrialConceptId
+  label: string
+  description: string
+  required: boolean
+  keywords: string[]
+}
+
+export interface ColumnMappingState {
+  columnName: string
+  concept?: TrialConceptId
+  confidence: 'high' | 'medium' | 'low'
+  autoMatched: boolean
+}
+

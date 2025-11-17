@@ -23,10 +23,15 @@
 ### Key Features
 
 - **CSV Data Upload**: Drag-and-drop file upload with automatic data normalization
-- **Interactive Dashboard**: Real-time metrics and visualizations
+- **Column Mapping Wizard**: Guided step to map CSV headers to trial concepts with validation
+- **Interactive Dashboard**: Real-time metrics and adaptive visualizations
+- **Data Filtering**: Filter by site, gender, and treatment with real-time updates
+- **Export Functionality**: Export filtered data as CSV or individual charts as PNG
 - **Site Reports**: Detailed per-site analysis with patient lists
-- **Data Intelligence**: Automatic data cleaning and column name normalization
+- **Adaptive Charts**: Automatically generates appropriate chart types based on data structure
+- **Data Intelligence**: Automatic data cleaning, column name normalization, and dataset profiling
 - **Responsive Design**: Mobile-friendly interface using Tailwind CSS
+- **Demo Dataset**: Pre-configured realistic multi-site dataset for testing
 
 ---
 
@@ -69,8 +74,11 @@ App
         └── Routes
             ├── Dashboard (/)
             │   ├── DataUpload
+            │   ├── MappingWizard (post-upload column matching)
+            │   ├── FilterBar (Site, Gender, Treatment)
             │   ├── MetricCards
-            │   ├── Charts (Multiple)
+            │   ├── AdaptiveCharts (Multiple, filtered)
+            │   ├── ExportButtons (CSV)
             │   └── SitesTable
             └── SiteReport (/site/:siteId)
                 ├── SiteMetrics
@@ -128,14 +136,28 @@ ct-viz-dashboard/
 │   │   ├── Layout.tsx         # Main layout wrapper
 │   │   ├── Dashboard.tsx      # Main dashboard view
 │   │   ├── DataUpload.tsx     # File upload component
+│   │   ├── AdaptiveChart.tsx  # Adaptive chart component
 │   │   └── SiteReport.tsx     # Site-specific report view
 │   ├── context/               # React Context providers
 │   │   └── DataContext.tsx    # Global data state management
 │   ├── types/                 # TypeScript type definitions
 │   │   └── index.ts           # All type interfaces
 │   └── utils/                 # Utility functions
-│       └── dataCleaning.ts    # Data processing utilities
+│       ├── dataCleaning.ts    # Data processing utilities
+│       └── chartDataGenerator.ts # Chart data generation utilities
 ├── dist/                      # Production build output
+├── test-data/                 # Test datasets with data quality issues
+│   ├── missing-headers.csv
+│   ├── bad-column-names.csv
+│   ├── partial-data.csv
+│   ├── empty-rows.csv
+│   ├── mixed-data-types.csv
+│   ├── extra-columns.csv
+│   ├── minimal-data.csv
+│   ├── malformed-dates.csv
+│   ├── whitespace-issues.csv
+│   ├── duplicate-rows.csv
+│   └── README.md
 ├── node_modules/              # Dependencies
 ├── index.html                 # HTML entry point
 ├── package.json               # Project dependencies & scripts
@@ -143,7 +165,8 @@ ct-viz-dashboard/
 ├── vite.config.ts             # Vite build configuration
 ├── tailwind.config.js         # Tailwind CSS configuration
 ├── postcss.config.js          # PostCSS configuration
-└── sample-data.csv            # Example CSV data file
+├── sample-data.csv            # Example CSV data file
+└── demo-data.csv              # Realistic multi-site demo dataset (100 records)
 ```
 
 ---
@@ -240,46 +263,137 @@ ct-viz-dashboard/
 
 ---
 
-### 4. Dashboard.tsx
+### 4. Mapping Workflow (MappingWizard.tsx)
 
-**Purpose**: Main dashboard showing overview metrics and charts.
+**Purpose**: Intermediate wizard that aligns uploaded CSV headers with CT-Viz trial concepts before cleaning/visualization.
+
+**Key Behaviors**:
+- Displays every CSV column in a table with a dropdown to choose a trial concept.
+- Auto-suggests mappings using keyword heuristics (`patient_id` → Subject ID, `site` → Site ID, etc.).
+- Highlights ambiguous/required concepts in amber until the user resolves them.
+- Prevents progression until all required concepts (Subject ID, Site ID, Treatment, Status, Enrollment Date) are mapped.
+- Emits a normalized mapping payload that downstream steps use to reshape the dataset.
+
+**State Management**:
+- Maintains an array of `{ columnName, concept, confidence, autoMatched }`.
+- When the user edits a dropdown, updates local state and clears ambiguity warnings.
+- Exposes a computed `canProceed` boolean (all required concepts mapped & no null assignments) to enable the **Review & Load Data** button.
+
+**UI Elements**:
+- Column list with badges such as “Auto-matched” or “Needs selection”.
+- Tailwind-styled selects (`border-amber-300 bg-amber-50`) when unresolved.
+- Summary banner listing required concepts still missing.
+- “Review & Load Data” button triggers `onConfirm(normalizedRows, mappings)` for the parent to store the mapping and move to the Dashboard step.
+
+**Integration**:
+- Lives between DataUpload and Dashboard rendering. After `parseCSV`, the app shows MappingWizard; upon confirmation it transforms data via the mapping and loads it into context.
+
+---
+
+### 5. Dashboard.tsx
+
+**Purpose**: Main dashboard showing overview metrics and adaptive charts with filtering capabilities.
 
 **Features**:
-- **5 Metric Cards**: Total Patients, Total Sites, Active Sites, Enrollment Rate, Completion Rate
-- **4 Charts**:
-  - Patient Status Distribution (Pie Chart)
-  - Gender Distribution (Pie Chart)
-  - Age Distribution (Bar Chart)
-  - Top Sites by Enrollment (Horizontal Bar Chart)
+- **Filter Bar**: Dropdown filters for Site, Gender, and Treatment with real-time data filtering
+- **Export Functionality**: CSV export button (appears when filters are active)
+- **Dynamic Metric Cards**: Dataset overview metrics (Total Records, Complete Records, numeric column statistics)
+- **Adaptive Charts**: Automatically generated charts based on data structure (up to 8 charts)
+- **Key Insights Panel**: Highlights important dataset characteristics
 - **Sites Table**: List of all sites with performance metrics and navigation links
 - **Data Upload**: Accessible from dashboard header
 
-**State Dependencies**:
-- Uses `useData()` hook to access `clinicalData` and `metrics`
+**State Management**:
+- Uses `useData()` hook to access `clinicalData`, `metrics`, and `rawData`
 - Uses `useNavigate()` for programmatic navigation
+- Local state for filters: `{ site: string, gender: string, treatment: string }`
+
+**Filtering System**:
+1. **Filter Options Extraction**: Dynamically extracts unique values from raw data for:
+   - Sites: All unique site IDs
+   - Genders: All unique gender values (normalized to single character)
+   - Treatments: All unique treatment values
+2. **Data Filtering**: Filters raw data based on selected filter values
+3. **Real-time Updates**: All charts and metrics update when filters change
+4. **Filter Status**: Shows count of filtered vs. total records
 
 **Data Processing**:
-1. **Status Breakdown**: Groups patients by status, calculates completion rate
-2. **Site Performance**: Sorts sites by enrollment, limits to top 10
-3. **Gender Distribution**: Counts patients by gender
-4. **Age Distribution**: Groups patients into age brackets (<18, 18-29, 30-39, 40-49, 50-59, 60-69, 70+)
+1. **Dataset Insights**: Uses `analyzeDataset` to profile all columns
+2. **Visualizable Columns**: Identifies columns suitable for visualization:
+   - Categorical columns with 2-50 unique values
+   - Numeric columns with >5 unique values
+   - Date columns
+3. **Dynamic Metrics**: Extracts statistics from numeric columns for metric cards
 
 **Chart Configuration**:
-- Uses Recharts library for all visualizations
-- ResponsiveContainer ensures charts scale with viewport
-- Custom color palette: `['#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']`
-- Tooltips enabled for interactivity
+- Uses AdaptiveChart component for all visualizations
+- Charts automatically adapt to filtered data
+- Improved color palette: `['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1']`
+- Responsive grid layout: 1 column (mobile) → 2 columns (desktop)
+
+**Export Functionality**:
+- **CSV Export**: Exports filtered data as CSV file
+- Filename includes date: `filtered_data_YYYY-MM-DD.csv`
+- Only appears when filters are active
 
 **Empty State**:
 - Shows welcome message when no data is loaded
 - Displays DataUpload component for initial data upload
 
 **Navigation**:
-- Clicking "View Report" on a site row navigates to `/site/:siteId`
+- Clicking "View Details" on a site row navigates to `/site/:siteId`
+
+**Responsive Design**:
+- Filter bar wraps on mobile devices
+- Metric cards: 1 column (mobile) → 2 columns (tablet) → 4 columns (desktop)
+- Charts: 1 column (mobile/tablet) → 2 columns (desktop)
+- Table scrolls horizontally on small screens
 
 ---
 
-### 5. SiteReport.tsx
+### 5. AdaptiveChart.tsx
+
+**Purpose**: Adaptive chart component that automatically selects the best chart type based on column profile.
+
+**Features**:
+- **Automatic Chart Type Selection**: Chooses pie, bar, line, or histogram based on data type
+- **PNG Export**: Individual chart export functionality
+- **Improved Styling**: Enhanced labels, tooltips, and color balance
+- **Responsive Design**: Adapts to container size
+
+**Chart Type Logic**:
+- **Pie Chart**: Categorical data with ≤8 unique values
+- **Bar Chart**: Categorical data with >8 unique values
+- **Histogram**: Numeric data (binned into 15 bins)
+- **Line Chart**: Date/time series data
+
+**Props**:
+- `profile: ColumnProfile` - Column metadata and statistics
+- `rawData: any[]` - Raw data array (may be filtered)
+
+**Export Functionality**:
+- **PNG Export**: Converts SVG chart to PNG image
+- Export button appears on each chart card
+- Filename: `{columnName}_chart.png`
+- Handles SVG to canvas conversion with proper dimensions
+
+**Styling Improvements**:
+- **Color Palette**: Balanced 10-color palette for better visual distinction
+- **Axis Labels**: Y-axis labels with proper positioning
+- **Tooltips**: Styled tooltips with rounded corners and borders
+- **Pie Charts**: Donut style with inner radius for better readability
+- **Bar Charts**: Rounded corners on bars
+- **Line Charts**: Enhanced dots and active dot states
+
+**Data Generation**:
+- Uses utility functions from `chartDataGenerator.ts`:
+  - `generateCategoricalChartData()` - For categorical columns
+  - `generateNumericChartData()` - For numeric columns (histogram)
+  - `generateTimeSeriesData()` - For date columns
+
+---
+
+### 6. SiteReport.tsx
 
 **Purpose**: Displays detailed analysis for a specific clinical trial site.
 
@@ -340,18 +454,20 @@ The application uses **React Context API** for global state management, avoiding
 interface DataContextType {
   clinicalData: ClinicalData | null      // Raw processed data
   metrics: DashboardMetrics | null        // Calculated metrics
-  loadData: (data: ClinicalData) => void  // Function to load new data
+  rawData: any[] | null                   // Raw CSV data for filtering/charts
+  loadData: (data: ClinicalData, rawData?: any[]) => void  // Function to load new data
   clearData: () => void                    // Function to clear data
 }
 ```
 
 **Provider Component**: `DataProvider`
 - Wraps the entire application
-- Manages two state variables: `clinicalData` and `metrics`
+- Manages three state variables: `clinicalData`, `metrics`, and `rawData`
 - Provides `loadData` function that:
   1. Sets clinical data
-  2. Calculates metrics using `calculateMetrics` utility
-  3. Updates metrics state
+  2. Stores raw data for filtering and adaptive charts
+  3. Calculates metrics using `calculateMetrics` utility
+  4. Updates metrics state
 
 **Custom Hook**: `useData()`
 - Provides access to context
@@ -367,17 +483,28 @@ interface DataContextType {
    ↓
 3. parseCSV() → Raw Array
    ↓
-4. processClinicalData() → ClinicalData
+4. MappingWizard auto-suggests and validates column ↔ concept assignments
    ↓
-5. DataContext.loadData()
+5. Confirmed mappings reshape raw rows into canonical structures
    ↓
-6. calculateMetrics() → DashboardMetrics
+6. processClinicalData() → ClinicalData
    ↓
-7. Context State Updated
+7. analyzeDataset() → DatasetInsights (for adaptive charts)
    ↓
-8. All Components Re-render
+8. DataContext.loadData(clinicalData, rawData)
    ↓
-9. Dashboard & Layout Update UI
+9. calculateMetrics() → DashboardMetrics
+   ↓
+10. Context State Updated (clinicalData, metrics, rawData)
+   ↓
+11. All Components Re-render
+   ↓
+12. Dashboard:
+    - Extracts filter options from rawData
+    - Generates adaptive charts from insights
+    - Applies filters to rawData for filtered visualizations
+   ↓
+13. UI Updates with filtered/unfiltered data
 ```
 
 ### Data Structures
@@ -527,7 +654,45 @@ const normalizeKey = (key: string) =>
    - `startDate`: Earliest enrollment date from patients
 4. Returns complete `ClinicalData` object
 
-#### 5. calculateMetrics(data: ClinicalData): DashboardMetrics
+#### 5. analyzeDataset(rawData: any[]): DatasetInsights
+
+**Purpose**: Analyzes raw dataset to generate column profiles and insights.
+
+**Key Features**:
+- **Column Profiling**: Analyzes each column for type, missing values, unique count
+- **Type Inference**: Automatically detects numeric, categorical, date, or text types
+- **Statistics**: Calculates min/max/mean/median for numeric columns
+- **Top Values**: Identifies most common values for categorical columns
+- **Date Ranges**: Extracts date ranges for date columns
+- **Highlights**: Generates key insights about the dataset
+
+**Column Profile**:
+```typescript
+interface ColumnProfile {
+  name: string
+  type: 'numeric' | 'categorical' | 'date' | 'text'
+  count: number
+  missing: number
+  unique: number
+  sampleValues: Array<string | number>
+  stats?: { min, max, mean, median }  // For numeric
+  topValues?: Array<{ value: string, count: number }>  // For categorical
+  dateRange?: { min: string, max: string }  // For dates
+}
+```
+
+**Type Detection Logic**:
+- **Numeric**: ≥60% of values are valid numbers
+- **Date**: ≥60% of values are valid dates
+- **Categorical**: ≤50% unique values and ≤20 unique values
+- **Text**: Default for other cases
+
+**Usage**:
+```typescript
+const insights = analyzeDataset(rawData)
+```
+
+#### 6. calculateMetrics(data: ClinicalData): DashboardMetrics
 
 **Purpose**: Calculates all dashboard metrics from clinical data.
 
@@ -560,6 +725,109 @@ const normalizeKey = (key: string) =>
    - Counts result
 
 **Returns**: Complete `DashboardMetrics` object with all calculated values
+
+#### 7. generateSampleClinicalData(options?): ClinicalData
+
+**Purpose**: Generates sample clinical data for testing and demos.
+
+**Parameters**:
+- `options.numSites?: number` - Number of sites (default: 6)
+- `options.numPatients?: number` - Number of patients (default: 250)
+- `options.startDate?: string` - Start date for enrollment
+- `options.months?: number` - Time span in months (default: 8)
+
+**Returns**: `ClinicalData` with generated patients and sites
+
+**Usage**:
+```typescript
+const sample = generateSampleClinicalData({ numSites: 6, numPatients: 300, months: 9 })
+```
+
+### chartDataGenerator.ts
+
+This file contains utilities for generating chart data from raw datasets.
+
+#### 1. generateCategoricalChartData(rawData: any[], columnName: string): ChartDataPoint[]
+
+**Purpose**: Generates data for categorical columns (pie/bar charts).
+
+**Algorithm**:
+1. Iterates through raw data
+2. Counts occurrences of each unique value
+3. Sorts by count (descending)
+4. Returns array of `{ name, value }` pairs
+
+**Returns**: `ChartDataPoint[]` - Sorted array of category counts
+
+**Usage**:
+```typescript
+const chartData = generateCategoricalChartData(rawData, 'status')
+```
+
+#### 2. generateNumericChartData(rawData: any[], columnName: string, bins?: number): ChartDataPoint[]
+
+**Purpose**: Generates histogram data for numeric columns.
+
+**Parameters**:
+- `rawData: any[]` - Raw data array
+- `columnName: string` - Column to analyze
+- `bins: number` - Number of bins (default: 10, used: 15)
+
+**Algorithm**:
+1. Extracts numeric values from column
+2. Finds min and max values
+3. Divides range into bins
+4. Counts values in each bin
+5. Filters out empty bins
+
+**Returns**: `ChartDataPoint[]` - Array of bin ranges and counts
+
+**Usage**:
+```typescript
+const histogramData = generateNumericChartData(rawData, 'age', 15)
+```
+
+#### 3. generateTimeSeriesData(rawData: any[], columnName: string, groupBy?: 'day' | 'week' | 'month'): TimeSeriesDataPoint[]
+
+**Purpose**: Generates time series data for date columns.
+
+**Parameters**:
+- `rawData: any[]` - Raw data array
+- `columnName: string` - Date column name
+- `groupBy: 'day' | 'week' | 'month'` - Grouping interval (default: 'month')
+
+**Algorithm**:
+1. Parses dates from column
+2. Groups by specified interval (day/week/month)
+3. Counts occurrences per time period
+4. Sorts chronologically
+5. Limits to 50 points for performance
+
+**Returns**: `TimeSeriesDataPoint[]` - Array of `{ date, count }` pairs
+
+**Usage**:
+```typescript
+const timeSeries = generateTimeSeriesData(rawData, 'enrollmentDate', 'month')
+```
+
+#### 4. getRecommendedChartType(profile: ColumnProfile): 'pie' | 'bar' | 'line' | 'histogram'
+
+**Purpose**: Determines the best chart type for a column.
+
+**Logic**:
+- **Date columns** → Line chart
+- **Numeric columns** → Histogram
+- **Categorical columns**:
+  - ≤8 unique values → Pie chart
+  - >8 unique values → Bar chart
+- **Default** → Bar chart
+
+**Returns**: Recommended chart type string
+
+**Usage**:
+```typescript
+const chartType = getRecommendedChartType(columnProfile)
+```
 
 ---
 
@@ -798,7 +1066,8 @@ const { clinicalData, metrics, loadData, clearData } = useData()
 **Properties**:
 - `clinicalData: ClinicalData | null` - Current clinical data
 - `metrics: DashboardMetrics | null` - Calculated metrics
-- `loadData: (data: ClinicalData) => void` - Load new data
+- `rawData: any[] | null` - Raw CSV data for filtering and adaptive charts
+- `loadData: (data: ClinicalData, rawData?: any[]) => void` - Load new data
 - `clearData: () => void` - Clear all data
 
 **Usage**:
@@ -806,7 +1075,7 @@ const { clinicalData, metrics, loadData, clearData } = useData()
 import { useData } from '../context/DataContext'
 
 const MyComponent = () => {
-  const { clinicalData, metrics, loadData } = useData()
+  const { clinicalData, metrics, rawData, loadData } = useData()
   // Use data...
 }
 ```
@@ -863,6 +1132,18 @@ const sites = extractSites(patients)
 const clinicalData = processClinicalData(rawData)
 ```
 
+#### analyzeDataset(rawData: any[]): DatasetInsights
+
+**Parameters**:
+- `rawData: any[]` - Raw CSV data array
+
+**Returns**: `DatasetInsights` - Column profiles and dataset insights
+
+**Usage**:
+```typescript
+const insights = analyzeDataset(rawData)
+```
+
 #### calculateMetrics(data: ClinicalData): DashboardMetrics
 
 **Parameters**:
@@ -873,6 +1154,59 @@ const clinicalData = processClinicalData(rawData)
 **Usage**:
 ```typescript
 const metrics = calculateMetrics(clinicalData)
+```
+
+#### generateCategoricalChartData(rawData: any[], columnName: string): ChartDataPoint[]
+
+**Parameters**:
+- `rawData: any[]` - Raw data array
+- `columnName: string` - Column name to analyze
+
+**Returns**: `ChartDataPoint[]` - Chart data points
+
+**Usage**:
+```typescript
+const chartData = generateCategoricalChartData(rawData, 'status')
+```
+
+#### generateNumericChartData(rawData: any[], columnName: string, bins?: number): ChartDataPoint[]
+
+**Parameters**:
+- `rawData: any[]` - Raw data array
+- `columnName: string` - Column name to analyze
+- `bins?: number` - Number of bins (default: 10)
+
+**Returns**: `ChartDataPoint[]` - Histogram data points
+
+**Usage**:
+```typescript
+const histogramData = generateNumericChartData(rawData, 'age', 15)
+```
+
+#### generateTimeSeriesData(rawData: any[], columnName: string, groupBy?: 'day' | 'week' | 'month'): TimeSeriesDataPoint[]
+
+**Parameters**:
+- `rawData: any[]` - Raw data array
+- `columnName: string` - Date column name
+- `groupBy?: 'day' | 'week' | 'month'` - Grouping interval (default: 'month')
+
+**Returns**: `TimeSeriesDataPoint[]` - Time series data points
+
+**Usage**:
+```typescript
+const timeSeries = generateTimeSeriesData(rawData, 'enrollmentDate', 'month')
+```
+
+#### getRecommendedChartType(profile: ColumnProfile): 'pie' | 'bar' | 'line' | 'histogram'
+
+**Parameters**:
+- `profile: ColumnProfile` - Column profile metadata
+
+**Returns**: Recommended chart type
+
+**Usage**:
+```typescript
+const chartType = getRecommendedChartType(columnProfile)
 ```
 
 ### Routing
@@ -957,14 +1291,20 @@ The system automatically:
 
 ### Potential Improvements
 
-1. **Data Export**: Export processed data as CSV/JSON
-2. **Filtering**: Filter patients by criteria
-3. **Search**: Search patients and sites
-4. **Charts**: Additional chart types (heatmaps, timelines)
-5. **Authentication**: User authentication and data persistence
-6. **Backend Integration**: API connection for real-time data
-7. **Advanced Metrics**: Statistical analysis and comparisons
-8. **Data Validation**: More robust CSV validation and error reporting
+1. ✅ **Data Export**: Export processed data as CSV/JSON (Implemented)
+2. ✅ **Filtering**: Filter patients by criteria (Implemented - Site, Gender, Treatment)
+3. ✅ **Chart Export**: Export individual charts as PNG (Implemented)
+4. ✅ **Adaptive Charts**: Automatic chart type selection based on data (Implemented)
+5. **Search**: Search patients and sites
+6. **Additional Chart Types**: Heatmaps, scatter plots, box plots
+7. **Advanced Filtering**: Date ranges, numeric ranges, multiple selections
+8. **Authentication**: User authentication and data persistence
+9. **Backend Integration**: API connection for real-time data
+10. **Advanced Metrics**: Statistical analysis and comparisons
+11. **Data Validation**: More robust CSV validation and error reporting
+12. **Export Formats**: PDF reports, Excel export
+13. **Chart Customization**: User-configurable chart colors and styles
+14. **Data Comparison**: Compare multiple datasets side-by-side
 
 ---
 
@@ -982,11 +1322,56 @@ The system automatically:
 
 ## Version History
 
+- **v1.1.0**: Enhanced Dashboard & Export Features (Current)
+  - Column mapping wizard with auto-suggestions and validation
+  - Data filtering (Site, Gender, Treatment)
+  - CSV export for filtered data
+  - PNG export for individual charts
+  - Improved chart styling and labeling
+  - Enhanced responsive layout
+  - Adaptive chart system
+  - Dataset profiling and insights
+  - Demo dataset (100 records, 5 sites)
+  - Test data files for data quality testing
+
 - **v1.0.0**: Initial release
   - CSV upload functionality
   - Dashboard with metrics and charts
   - Site-specific reports
   - Data cleaning and normalization
+
+---
+
+## Test Data Files
+
+The `test-data/` directory contains mock CSV files with various data quality issues for testing UI resilience:
+
+1. **missing-headers.csv** - No header row
+2. **bad-column-names.csv** - Non-standard column names
+3. **partial-data.csv** - Missing values throughout
+4. **empty-rows.csv** - Empty rows between data
+5. **mixed-data-types.csv** - Inconsistent data types
+6. **extra-columns.csv** - Additional unexpected columns
+7. **minimal-data.csv** - Only essential columns
+8. **malformed-dates.csv** - Various date formats
+9. **whitespace-issues.csv** - Extra whitespace
+10. **duplicate-rows.csv** - Duplicate patient records
+
+See `test-data/README.md` for detailed descriptions.
+
+## Demo Dataset
+
+**File**: `demo-data.csv`
+
+A realistic multi-site clinical trial dataset with:
+- **100 patient records**
+- **5 sites** (SITE-001 through SITE-005)
+- **3 treatment groups**: Control, Treatment A, Treatment B
+- **Time span**: June 2023 to April 2024
+- **Status variety**: Active, Completed
+- **Balanced distribution**: Ages 29-67, balanced gender
+
+Perfect for testing all dashboard features including filtering, export, and adaptive charts.
 
 ---
 

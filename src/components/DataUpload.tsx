@@ -2,12 +2,16 @@ import React, { useRef, useState } from 'react'
 import { Upload, FileText, X, Sparkles } from 'lucide-react'
 import { parseCSV, processClinicalData, generateSampleClinicalData } from '../utils/dataCleaning'
 import { useData } from '../context/DataContext'
+import MappingWizard from './MappingWizard'
+import { ColumnMappingState } from '../types'
 
 const DataUpload: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [rawPreview, setRawPreview] = useState<any[] | null>(null)
+  const [showMapping, setShowMapping] = useState(false)
   const { loadData } = useData()
 
   const handleFile = async (file: File) => {
@@ -16,8 +20,8 @@ const DataUpload: React.FC = () => {
 
     try {
       const rawData = await parseCSV(file)
-      const clinicalData = processClinicalData(rawData)
-      loadData(clinicalData, rawData)
+      setRawPreview(rawData)
+      setShowMapping(true)
     } catch (error) {
       console.error('Error processing file:', error)
       alert('Error processing file. Please check the format and try again.')
@@ -58,6 +62,8 @@ const DataUpload: React.FC = () => {
 
   const handleClear = () => {
     setUploadedFileName(null)
+    setRawPreview(null)
+    setShowMapping(false)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
@@ -79,12 +85,35 @@ const DataUpload: React.FC = () => {
       }))
       loadData(sample, rawSampleData)
       setUploadedFileName('Sample data')
+      setShowMapping(false)
+      setRawPreview(null)
     } catch (error) {
       console.error('Error generating sample data:', error)
       alert('Could not generate sample data.')
     } finally {
       setIsProcessing(false)
     }
+  }
+
+  const handleMappingConfirm = (normalizedRows: any[], _mappings: ColumnMappingState[]) => {
+    setIsProcessing(true)
+    try {
+      const clinicalData = processClinicalData(normalizedRows)
+      loadData(clinicalData, normalizedRows)
+      setShowMapping(false)
+      setRawPreview(null)
+    } catch (error) {
+      console.error('Error applying mappings:', error)
+      alert('Could not apply column mappings. Please try again.')
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  const handleMappingCancel = () => {
+    setShowMapping(false)
+    setRawPreview(null)
+    setUploadedFileName(null)
   }
 
   return (
@@ -162,6 +191,16 @@ const DataUpload: React.FC = () => {
           Tip: Use the <span className="font-semibold">sample data</span> button to preview the dashboard without a CSV.
         </p>
       </div>
+
+      {showMapping && rawPreview && (
+        <div className="mt-6">
+          <MappingWizard
+            rawData={rawPreview}
+            onConfirm={handleMappingConfirm}
+            onCancel={handleMappingCancel}
+          />
+        </div>
+      )}
     </div>
   )
 }
