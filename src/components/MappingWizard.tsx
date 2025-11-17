@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react'
-import { AlertTriangle, X } from 'lucide-react'
+import { AlertTriangle, X, ChevronDown } from 'lucide-react'
 import { ColumnMappingState, TrialConceptDefinition, TrialConceptId } from '../types'
 import { TRIAL_CONCEPTS, initializeColumnMappings, applyMappingsToRows, getUnmappedRequiredColumns } from '../utils/mapping'
 
@@ -160,53 +160,91 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-2 text-left font-medium text-gray-600">Column Name & Concept</th>
+                <th className="px-4 py-2 text-left font-medium text-gray-600">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {mappings.map((mapping) => {
+                const conceptDefinition = TRIAL_CONCEPTS.find((concept) => concept.id === mapping.concept)
+                const hasConcept = mapping.concept && mapping.concept !== 'ignore'
+                
                 return (
                   <tr key={mapping.columnName} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1">
-                            <input
-                              type="text"
-                              value={mapping.displayName}
-                              onChange={(event) => handleColumnRename(mapping.columnName, event.target.value)}
-                              onFocus={() => handleColumnRenameFocus(mapping.columnName)}
-                              onBlur={handleColumnRenameBlur}
-                              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                              placeholder="Enter column name"
-                              spellCheck={false}
-                            />
-                          </div>
-                          <div className="w-64">
-                            <select
-                              className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                              value={mapping.concept || 'ignore'}
-                              onChange={(event) => handleConceptChange(mapping.columnName, event.target.value === 'ignore' ? undefined : event.target.value)}
-                            >
-                              <option value="ignore">Other / Ignore</option>
-                              {requiredConceptOptions.length > 0 && (
-                                <optgroup label="Required">
-                                  {requiredConceptOptions.map(renderConceptOption)}
-                                </optgroup>
-                              )}
-                              {optionalConceptOptions.length > 0 && (
-                                <optgroup label="Optional">
-                                  {optionalConceptOptions.map(renderConceptOption)}
-                                </optgroup>
-                              )}
-                            </select>
-                          </div>
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={mapping.displayName}
+                            onChange={(event) => handleColumnRename(mapping.columnName, event.target.value)}
+                            onFocus={() => handleColumnRenameFocus(mapping.columnName)}
+                            onBlur={handleColumnRenameBlur}
+                            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            placeholder="Enter column name"
+                            spellCheck={false}
+                          />
+                          {editingColumn !== mapping.columnName && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              Original: <span className="font-medium">{mapping.columnName || 'Unnamed column'}</span>
+                            </p>
+                          )}
                         </div>
-                        {editingColumn !== mapping.columnName && (
-                          <p className="text-xs text-gray-500">
-                            Original: <span className="font-medium">{mapping.columnName || 'Unnamed column'}</span>
-                          </p>
-                        )}
+                        
+                        <div className="flex items-center gap-2 min-w-[280px]">
+                          {hasConcept ? (
+                            <div className="flex items-center gap-2 flex-1">
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary-50 text-primary-700 text-sm font-medium border border-primary-200">
+                                {conceptDefinition?.label}
+                                <button
+                                  onClick={() => handleConceptChange(mapping.columnName, undefined)}
+                                  className="hover:bg-primary-100 rounded-full p-0.5 transition-colors"
+                                  aria-label="Remove concept"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="relative flex-1">
+                              <select
+                                className="appearance-none w-full rounded-md border border-gray-300 bg-white px-3 py-2 pr-8 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                value={mapping.concept || 'ignore'}
+                                onChange={(event) => handleConceptChange(mapping.columnName, event.target.value === 'ignore' ? undefined : event.target.value)}
+                              >
+                                <option value="ignore">Select concept...</option>
+                                {requiredConceptOptions.length > 0 && (
+                                  <optgroup label="Required">
+                                    {requiredConceptOptions.map(renderConceptOption)}
+                                  </optgroup>
+                                )}
+                                {optionalConceptOptions.length > 0 && (
+                                  <optgroup label="Optional">
+                                    {optionalConceptOptions.map(renderConceptOption)}
+                                  </optgroup>
+                                )}
+                              </select>
+                              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                            </div>
+                          )}
+                        </div>
                       </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      {hasConcept ? (
+                        mapping.autoMatched ? (
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                            Auto-matched
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            Mapped
+                          </span>
+                        )
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                          Not found
+                        </span>
+                      )}
                     </td>
                   </tr>
                 )
