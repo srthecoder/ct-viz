@@ -56,7 +56,6 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
     () => TRIAL_CONCEPTS.filter((concept) => !REQUIRED_CONCEPT_IDS.includes(concept.id) && concept.id !== 'ignore'),
     []
   )
-  const ignoreConcept = TRIAL_CONCEPTS.find((concept) => concept.id === 'ignore')
 
   const handleConceptChange = (columnName: string, conceptId?: string) => {
     setMappings((prev) => {
