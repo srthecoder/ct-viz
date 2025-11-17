@@ -180,7 +180,8 @@ export const getUnmappedRequiredColumns = (mappings: ColumnMappingState[], requi
     const hasMapping = mappings.some((m) => m.concept === conceptId)
     if (!hasMapping) {
       // Find columns that could be mapped to this concept but aren't
-      const potentialColumns = mappings.filter((m) => !m.concept || m.concept === 'ignore')
+      // Exclude columns that are already mapped to other concepts, set to 'other', or 'ignore'
+      const potentialColumns = mappings.filter((m) => !m.concept || (m.concept !== 'ignore' && m.concept !== 'other'))
       if (potentialColumns.length > 0) {
         unmappedColumns.push({
           columnName: potentialColumns[0].columnName,
