@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import { CheckCircle2, AlertTriangle, Wand2, X, Edit3 } from 'lucide-react'
 import { ColumnMappingState, TrialConceptDefinition, TrialConceptId } from '../types'
-import { TRIAL_CONCEPTS, initializeColumnMappings, applyMappingsToRows } from '../utils/mapping'
+import { TRIAL_CONCEPTS, initializeColumnMappings, applyMappingsToRows, getUnmappedRequiredColumns } from '../utils/mapping'
 
 interface MappingWizardProps {
   rawData: any[]
@@ -35,6 +35,11 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
       .map((id) => TRIAL_CONCEPTS.find((concept) => concept.id === id))
       .filter((concept): concept is TrialConceptDefinition => Boolean(concept))
   }, [mappings])
+  
+  const unmappedColumns = useMemo(() => {
+    return getUnmappedRequiredColumns(mappings, REQUIRED_CONCEPT_IDS)
+  }, [mappings])
+  
   const canProceed = missingConcepts.length === 0
 
   const requiredConceptOptions = useMemo(
@@ -109,21 +114,31 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
         {missingConcepts.length > 0 ? (
           <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
             <div className="flex items-start space-x-2">
-              <AlertTriangle className="h-4 w-4 mt-0.5" />
-              <div>
-                <p className="font-semibold">Map the remaining required concepts before continuing:</p>
-                <ul className="list-disc list-inside">
-                  {missingConcepts.map((concept) => (
-                    <li key={concept.id}>{concept.label}</li>
-                  ))}
+              <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="font-semibold mb-2">Map the remaining required concepts before continuing:</p>
+                <ul className="list-disc list-inside space-y-1">
+                  {missingConcepts.map((concept) => {
+                    const unmappedColumn = unmappedColumns.find((uc) => uc.requiredConcept === concept.label)
+                    return (
+                      <li key={concept.id}>
+                        <span className="font-medium">{concept.label}</span>
+                        {unmappedColumn && (
+                          <span className="text-amber-700 ml-2">
+                            (suggest mapping column "{unmappedColumn.displayName}" to {concept.label})
+                          </span>
+                        )}
+                      </li>
+                    )
+                  })}
                 </ul>
               </div>
             </div>
           </div>
         ) : (
           <div className="flex items-center space-x-2 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
-            <CheckCircle2 className="h-4 w-4" />
-            <span>All required concepts are mapped. Optional columns can stay unmapped or set to “Other / Ignore”.</span>
+            <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+            <span>All required concepts are mapped. Optional columns can stay unmapped or set to "Other / Ignore".</span>
           </div>
         )}
 

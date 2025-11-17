@@ -6,14 +6,14 @@ export const TRIAL_CONCEPTS: TrialConceptDefinition[] = [
     label: 'Subject ID',
     description: 'Unique identifier for each patient/participant',
     required: true,
-    keywords: ['patientid', 'subjectid', 'participantid', 'patient_id', 'subject', 'id']
+    keywords: ['patientid', 'subjectid', 'participantid', 'patient_id', 'subject_id', 'participant_id']
   },
   {
     id: 'siteId',
     label: 'Site ID',
     description: 'Identifier of the site enrolling the subject',
     required: true,
-    keywords: ['siteid', 'site_id', 'site', 'location']
+    keywords: ['siteid', 'site_id', 'site', 'location', 'centre', 'center', 'facility', 'clinic', 'institution']
   },
   {
     id: 'visitId',
@@ -92,27 +92,91 @@ const normalize = (value: string) => value?.toLowerCase().replace(/[^a-z0-9]/g, 
 export const initializeColumnMappings = (columns: string[]): ColumnMappingState[] => {
   return columns.map((column) => {
     const normalized = normalize(column)
-    const suggestedConcept = TRIAL_CONCEPTS.find((concept) =>
-      concept.keywords.some((keyword) => normalized === keyword || normalized.includes(keyword))
-    )
-
-    let confidence: ColumnMappingState['confidence'] = 'low'
-    if (suggestedConcept) {
-      confidence = normalized === suggestedConcept.keywords[0] ? 'high' : 'medium'
+    
+    // Find best match with priority: exact match > starts with > contains
+    // Process concepts in order, but prioritize exact matches across all concepts first
+    let bestMatch: { concept: TrialConceptDefinition; confidence: 'high' | 'medium' | 'low' } | null = null
+    let exactMatch: { concept: TrialConceptDefinition } | null = null
+    
+    // First pass: look for exact matches (highest priority)
+    for (const concept of TRIAL_CONCEPTS) {
+      for (const keyword of concept.keywords) {
+        const normalizedKeyword = normalize(keyword)
+        if (normalized === normalizedKeyword) {
+          exactMatch = { concept }
+          break
+        }
+      }
+      if (exactMatch) break
+    }
+    
+    if (exactMatch) {
+      bestMatch = { concept: exactMatch.concept, confidence: 'high' }
+    } else {
+      // Second pass: look for starts-with matches (medium priority)
+      for (const concept of TRIAL_CONCEPTS) {
+        for (const keyword of concept.keywords) {
+          const normalizedKeyword = normalize(keyword)
+          if (normalizedKeyword.length >= 3 && normalized.startsWith(normalizedKeyword)) {
+            bestMatch = { concept, confidence: 'medium' }
+            break
+          }
+        }
+        if (bestMatch) break
+      }
+      
+      // Third pass: look for contains matches (low priority, but avoid very short keywords)
+      if (!bestMatch) {
+        for (const concept of TRIAL_CONCEPTS) {
+          for (const keyword of concept.keywords) {
+            const normalizedKeyword = normalize(keyword)
+            // Only match if keyword is substantial (>= 4 chars) to avoid false matches like "id" in "siteid"
+            if (normalizedKeyword.length >= 4 && normalized.includes(normalizedKeyword)) {
+              bestMatch = { concept, confidence: 'low' }
+              break
+            }
+          }
+          if (bestMatch) break
+        }
+      }
     }
 
     return {
       columnName: column,
       displayName: column,
-      concept: suggestedConcept?.id,
-      confidence,
-      autoMatched: Boolean(suggestedConcept)
+      concept: bestMatch?.concept.id,
+      confidence: bestMatch?.confidence || 'low',
+      autoMatched: Boolean(bestMatch)
     }
   })
 }
 
 export const getMissingRequiredConcepts = (mappings: ColumnMappingState[]) => {
   return TRIAL_CONCEPTS.filter((concept) => concept.required && !mappings.some((m) => m.concept === concept.id))
+}
+
+export const getUnmappedRequiredColumns = (mappings: ColumnMappingState[], requiredConceptIds: TrialConceptId[]) => {
+  const unmappedColumns: Array<{ columnName: string; displayName: string; requiredConcept: string }> = []
+  
+  requiredConceptIds.forEach((conceptId) => {
+    const concept = TRIAL_CONCEPTS.find((c) => c.id === conceptId)
+    if (!concept) return
+    
+    const hasMapping = mappings.some((m) => m.concept === conceptId)
+    if (!hasMapping) {
+      // Find columns that could be mapped to this concept but aren't
+      const potentialColumns = mappings.filter((m) => !m.concept || m.concept === 'ignore')
+      if (potentialColumns.length > 0) {
+        unmappedColumns.push({
+          columnName: potentialColumns[0].columnName,
+          displayName: potentialColumns[0].displayName,
+          requiredConcept: concept.label
+        })
+      }
+    }
+  })
+  
+  return unmappedColumns
 }
 
 export const applyMappingsToRows = (
