@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import { CheckCircle2, AlertTriangle, Wand2, X, Edit3 } from 'lucide-react'
-import { ColumnMappingState, TrialConceptDefinition, TrialConceptId } from '../types'
+import { ColumnMappingState, TrialConceptDefinition } from '../types'
 import {
   TRIAL_CONCEPTS,
   initializeColumnMappings,
