@@ -85,6 +85,7 @@ export type TrialConceptId =
   | 'status'
   | 'outcome'
   | 'enrollmentDate'
+  | 'ignore'
 
 export interface TrialConceptDefinition {
   id: TrialConceptId
@@ -96,6 +97,7 @@ export interface TrialConceptDefinition {
 
 export interface ColumnMappingState {
   columnName: string
+  displayName: string
   concept?: TrialConceptId
   confidence: 'high' | 'medium' | 'low'
   autoMatched: boolean

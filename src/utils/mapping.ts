@@ -49,6 +49,13 @@ export const TRIAL_CONCEPTS: TrialConceptDefinition[] = [
     description: 'Date subject enrolled or visit occurred',
     required: true,
     keywords: ['enrollmentdate', 'enrollment_date', 'date', 'visitdate', 'randomizationdate']
+  },
+  {
+    id: 'ignore',
+    label: 'Other / Ignore',
+    description: 'Column will not be used in downstream dashboards',
+    required: false,
+    keywords: []
   }
 ]
 
@@ -68,6 +75,7 @@ export const initializeColumnMappings = (columns: string[]): ColumnMappingState[
 
     return {
       columnName: column,
+      displayName: column,
       concept: suggestedConcept?.id,
       confidence,
       autoMatched: Boolean(suggestedConcept)
@@ -84,9 +92,17 @@ export const applyMappingsToRows = (
   mappings: ColumnMappingState[]
 ): Array<Record<string, any>> => {
   const conceptByColumn = new Map<string, TrialConceptId>()
+  const aliasByColumn = new Map<string, string>()
   mappings.forEach((mapping) => {
-    if (mapping.concept) {
+    if (mapping.concept && mapping.concept !== 'ignore') {
       conceptByColumn.set(mapping.columnName, mapping.concept)
+    }
+    if (
+      mapping.displayName &&
+      mapping.displayName.trim() &&
+      mapping.displayName.trim() !== mapping.columnName
+    ) {
+      aliasByColumn.set(mapping.columnName, mapping.displayName.trim())
     }
   })
 
@@ -97,17 +113,24 @@ export const applyMappingsToRows = (
     treatment: 'treatment',
     status: 'status',
     outcome: 'outcome',
-    enrollmentDate: 'enrollmentDate'
+    enrollmentDate: 'enrollmentDate',
+    ignore: ''
   }
 
   return rawRows.map((row) => {
-    const normalizedRow: Record<string, any> = { ...row }
+    const normalizedRow: Record<string, any> = {}
 
     Object.entries(row ?? {}).forEach(([key, value]) => {
+      const alias = aliasByColumn.get(key)
+      const displayKey = alias || key || 'Column'
+      normalizedRow[displayKey] = value
+
       const concept = conceptByColumn.get(key)
       if (!concept) return
       const canonicalField = conceptToCanonicalField[concept]
-      normalizedRow[canonicalField] = value
+      if (canonicalField) {
+        normalizedRow[canonicalField] = value
+      }
     })
 
     return normalizedRow

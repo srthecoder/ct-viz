@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react'
-import { CheckCircle2, AlertTriangle, Wand2, X } from 'lucide-react'
-import { ColumnMappingState, TrialConceptDefinition } from '../types'
+import { CheckCircle2, AlertTriangle, Wand2, X, Edit3 } from 'lucide-react'
+import { ColumnMappingState, TrialConceptDefinition, TrialConceptId } from '../types'
 import {
   TRIAL_CONCEPTS,
   initializeColumnMappings,
@@ -27,6 +27,16 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
   const missingConcepts = useMemo(() => getMissingRequiredConcepts(mappings), [mappings])
   const canProceed = missingConcepts.length === 0
 
+  const requiredConceptOptions = useMemo(
+    () => TRIAL_CONCEPTS.filter((concept) => concept.required),
+    []
+  )
+  const optionalConceptOptions = useMemo(
+    () => TRIAL_CONCEPTS.filter((concept) => !concept.required && concept.id !== 'ignore'),
+    []
+  )
+  const ignoreConcept = TRIAL_CONCEPTS.find((concept) => concept.id === 'ignore')
+
   const handleConceptChange = (columnName: string, conceptId?: string) => {
     setMappings((prev) =>
       prev.map((mapping) =>
@@ -35,6 +45,19 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
               ...mapping,
               concept: conceptId ? (conceptId as ColumnMappingState['concept']) : undefined,
               autoMatched: false
+            }
+          : mapping
+      )
+    )
+  }
+
+  const handleColumnRename = (columnName: string, value: string) => {
+    setMappings((prev) =>
+      prev.map((mapping) =>
+        mapping.columnName === columnName
+          ? {
+              ...mapping,
+              displayName: value || mapping.columnName
             }
           : mapping
       )
@@ -74,19 +97,23 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
 
       <div className="p-4 space-y-4">
         {missingConcepts.length > 0 ? (
-          <div className="flex items-center space-x-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-            <AlertTriangle className="h-4 w-4" />
-            <div>
-              <p className="font-medium">Missing required concepts:</p>
-              <p>
-                {missingConcepts.map((concept) => concept.label).join(', ')}
-              </p>
+          <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+            <div className="flex items-start space-x-2">
+              <AlertTriangle className="h-4 w-4 mt-0.5" />
+              <div>
+                <p className="font-semibold">Map the remaining required concepts before continuing:</p>
+                <ul className="list-disc list-inside">
+                  {missingConcepts.map((concept) => (
+                    <li key={concept.id}>{concept.label}</li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </div>
         ) : (
           <div className="flex items-center space-x-2 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
             <CheckCircle2 className="h-4 w-4" />
-            <span>All required concepts are mapped.</span>
+            <span>All required concepts are mapped. Optional columns can stay unmapped or set to “Other / Ignore”.</span>
           </div>
         )}
 
@@ -106,8 +133,22 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
                 return (
                   <tr key={mapping.columnName} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3">
-                      <div className="font-medium text-gray-900">{mapping.columnName}</div>
-                      <p className="text-xs text-gray-500">Raw column header</p>
+                      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 block">
+                        Column Label
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={mapping.displayName}
+                          onChange={(event) => handleColumnRename(mapping.columnName, event.target.value)}
+                          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          placeholder="Enter column name"
+                        />
+                        <Edit3 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300" />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Original header: <span className="font-medium">{mapping.columnName || 'Unnamed column'}</span>
+                      </p>
                     </td>
                     <td className="px-4 py-3">
                       <select
@@ -120,16 +161,34 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
                         onChange={(event) => handleConceptChange(mapping.columnName, event.target.value || undefined)}
                       >
                         <option value="">Select concept</option>
-                        {TRIAL_CONCEPTS.map(renderConceptOption)}
+                        {requiredConceptOptions.length > 0 && (
+                          <optgroup label="Required">
+                            {requiredConceptOptions.map(renderConceptOption)}
+                          </optgroup>
+                        )}
+                        {optionalConceptOptions.length > 0 && (
+                          <optgroup label="Optional">
+                            {optionalConceptOptions.map(renderConceptOption)}
+                          </optgroup>
+                        )}
+                        {ignoreConcept && (
+                          <option value={ignoreConcept.id}>{ignoreConcept.label}</option>
+                        )}
                       </select>
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-600">
                       {mapping.concept ? (
                         <div className="flex items-center space-x-2">
-                          <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-1 text-emerald-700">
-                            <CheckCircle2 className="mr-1 h-3 w-3" />
-                            {conceptDefinition?.label}
-                          </span>
+                          {mapping.concept === 'ignore' ? (
+                            <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-gray-600">
+                              Ignored
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-1 text-emerald-700">
+                              <CheckCircle2 className="mr-1 h-3 w-3" />
+                              {conceptDefinition?.label}
+                            </span>
+                          )}
                           {mapping.autoMatched && (
                             <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-blue-600">
                               <Wand2 className="mr-1 h-3 w-3" />
