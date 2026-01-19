@@ -85,7 +85,7 @@ export const extractSites = (patients: Patient[]): Site[] => {
     if (!siteMap.has(patient.siteId)) {
       siteMap.set(patient.siteId, {
         siteId: patient.siteId,
-        siteName: `Site ${patient.siteId}`,
+        siteName: `Clinic ${patient.siteId}`,
         location: 'Unknown',
         enrollmentCount: 0,
         status: 'Active'
@@ -107,7 +107,7 @@ export const processClinicalData = (rawData: any[]): ClinicalData => {
     patients,
     sites,
     metadata: {
-      trialName: 'Clinical Trial',
+      trialName: 'Veterinary Trial',
       startDate: patients.length > 0 
         ? patients.reduce((earliest, p) => 
             p.enrollmentDate < earliest.enrollmentDate ? p : earliest

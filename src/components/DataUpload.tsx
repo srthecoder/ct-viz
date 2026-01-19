@@ -182,7 +182,10 @@ const DataUpload: React.FC = () => {
       <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
         <h3 className="text-sm font-medium text-blue-900 mb-2">Expected CSV Format</h3>
         <p className="text-xs text-blue-700 mb-2">
-          Your CSV should include columns such as: patientId, siteId, age, gender, enrollmentDate, status, treatment
+          Your CSV should include columns such as: patientId, siteId, age, gender, species, enrollmentDate, status, treatment
+        </p>
+        <p className="text-xs text-blue-700 mb-2">
+          <strong>Veterinary-specific:</strong> You can include columns for blood reports (e.g., WBC, RBC, Hemoglobin) and X-ray scan results (e.g., XRayScore, XRayFindings). These will be automatically visualized.
         </p>
         <p className="text-xs text-blue-600">
           Column names are case-insensitive and will be automatically normalized

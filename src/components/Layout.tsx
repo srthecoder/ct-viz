@@ -18,8 +18,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <div className="flex items-center">
               <Database className="h-8 w-8 text-primary-600 mr-3" />
               <div>
-                <h1 className="text-xl font-bold text-gray-900">CT-Viz</h1>
-                <p className="text-xs text-gray-500">Clinical Trial Visualizer</p>
+                <h1 className="text-xl font-bold text-gray-900">Vet-Viz</h1>
+                <p className="text-xs text-gray-500">Veterinary Trial Dashboard</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -32,7 +32,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </Link>
               {clinicalData && (
                 <div className="text-sm text-gray-600">
-                  {clinicalData.patients.length} patients across {clinicalData.sites.length} sites
+                  {clinicalData.patients.length} patients across {clinicalData.sites.length} clinics
                 </div>
               )}
             </div>

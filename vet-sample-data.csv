@@ -1,0 +1,51 @@
+patientId,siteId,age,gender,species,enrollmentDate,status,treatment,WBC,RBC,Hemoglobin,Hematocrit,Platelets,XRayScore,XRayFindings
+VET001,CLINIC-001,5,M,Dog,2024-01-15,Active,Control,8.5,6.2,14.5,42.0,250000,2,Normal
+VET002,CLINIC-001,3,F,Cat,2024-01-18,Active,Treatment A,7.8,5.8,12.0,38.0,280000,1,Minor inflammation
+VET003,CLINIC-002,8,M,Dog,2024-01-20,Completed,Control,9.2,6.5,15.2,45.0,300000,3,Clear
+VET004,CLINIC-002,2,F,Cat,2024-01-22,Active,Treatment A,6.5,5.5,11.5,35.0,220000,2,Normal
+VET005,CLINIC-001,6,M,Dog,2024-01-25,Active,Treatment B,10.5,7.0,16.0,48.0,320000,1,Minor inflammation
+VET006,CLINIC-003,4,F,Cat,2024-02-01,Active,Control,7.2,5.6,12.5,36.0,240000,2,Normal
+VET007,CLINIC-002,7,M,Dog,2024-02-05,Completed,Treatment A,8.8,6.3,14.8,43.0,270000,3,Clear
+VET008,CLINIC-003,3,F,Cat,2024-02-08,Active,Control,6.8,5.4,11.0,33.0,210000,2,Normal
+VET009,CLINIC-001,9,M,Dog,2024-02-10,Active,Treatment B,11.2,7.2,17.0,50.0,350000,1,Minor inflammation
+VET010,CLINIC-003,5,F,Cat,2024-02-12,Completed,Treatment A,7.5,5.7,12.8,37.0,260000,3,Clear
+VET011,CLINIC-002,4,M,Dog,2024-02-15,Active,Control,8.0,6.0,14.0,41.0,250000,2,Normal
+VET012,CLINIC-001,6,F,Cat,2024-02-18,Active,Treatment A,7.0,5.5,11.8,34.0,230000,2,Normal
+VET013,CLINIC-003,10,M,Dog,2024-02-20,Completed,Control,9.5,6.8,15.5,46.0,310000,3,Clear
+VET014,CLINIC-002,2,F,Cat,2024-02-22,Active,Treatment B,6.2,5.2,10.8,32.0,200000,1,Minor inflammation
+VET015,CLINIC-001,7,M,Dog,2024-02-25,Active,Control,9.0,6.4,14.5,42.0,280000,2,Normal
+VET016,CLINIC-004,5,F,Cat,2024-03-01,Active,Treatment A,7.8,5.9,12.2,36.0,245000,2,Normal
+VET017,CLINIC-002,8,M,Dog,2024-03-05,Completed,Control,10.0,6.9,16.2,47.0,330000,3,Clear
+VET018,CLINIC-001,3,F,Cat,2024-03-08,Active,Treatment B,6.5,5.3,11.2,33.5,215000,1,Minor inflammation
+VET019,CLINIC-003,6,M,Dog,2024-03-10,Active,Control,8.2,6.1,14.2,41.5,255000,2,Normal
+VET020,CLINIC-003,4,F,Cat,2024-03-12,Completed,Treatment A,7.3,5.6,12.0,35.5,235000,3,Clear
+VET021,CLINIC-002,9,M,Dog,2024-03-15,Active,Treatment A,10.8,7.1,17.2,50.5,340000,1,Minor inflammation
+VET022,CLINIC-001,2,F,Cat,2024-03-18,Active,Control,6.8,5.4,11.5,34.0,225000,2,Normal
+VET023,CLINIC-003,11,M,Dog,2024-03-20,Completed,Treatment B,11.5,7.3,17.5,51.0,360000,3,Clear
+VET024,CLINIC-002,5,F,Cat,2024-03-22,Active,Control,7.6,5.8,12.5,37.0,250000,2,Normal
+VET025,CLINIC-001,7,M,Dog,2024-03-25,Active,Treatment A,9.5,6.6,15.0,44.0,290000,1,Minor inflammation
+VET026,CLINIC-004,3,F,Cat,2024-04-01,Active,Treatment B,6.9,5.5,11.8,35.0,240000,2,Normal
+VET027,CLINIC-002,6,M,Dog,2024-04-05,Completed,Control,8.5,6.2,14.8,43.0,275000,3,Clear
+VET028,CLINIC-001,4,F,Cat,2024-04-08,Active,Treatment A,7.1,5.6,12.2,36.5,245000,2,Normal
+VET029,CLINIC-003,8,M,Dog,2024-04-10,Active,Control,9.8,6.7,15.8,46.5,305000,1,Minor inflammation
+VET030,CLINIC-003,2,F,Cat,2024-04-12,Completed,Treatment B,6.4,5.3,11.0,33.0,220000,3,Clear
+VET031,CLINIC-002,10,M,Dog,2024-04-15,Active,Treatment A,10.2,7.0,16.5,48.5,325000,2,Normal
+VET032,CLINIC-001,5,F,Cat,2024-04-18,Active,Control,7.4,5.7,12.3,36.0,238000,2,Normal
+VET033,CLINIC-003,7,M,Dog,2024-04-20,Completed,Control,9.2,6.5,15.2,45.0,295000,3,Clear
+VET034,CLINIC-002,3,F,Cat,2024-04-22,Active,Treatment A,6.7,5.4,11.5,34.5,228000,1,Minor inflammation
+VET035,CLINIC-001,9,M,Dog,2024-04-25,Active,Treatment B,11.0,7.2,17.0,50.0,345000,2,Normal
+VET036,CLINIC-004,4,F,Cat,2024-05-01,Active,Control,7.7,5.8,12.6,37.5,252000,2,Normal
+VET037,CLINIC-002,6,M,Dog,2024-05-05,Completed,Treatment A,8.8,6.3,14.5,42.5,280000,3,Clear
+VET038,CLINIC-001,2,F,Cat,2024-05-08,Active,Control,6.6,5.3,11.3,33.5,217000,1,Minor inflammation
+VET039,CLINIC-003,8,M,Dog,2024-05-10,Active,Treatment B,10.5,6.9,16.8,49.0,335000,2,Normal
+VET040,CLINIC-003,5,F,Cat,2024-05-12,Completed,Control,7.9,5.9,12.8,38.0,260000,3,Clear
+VET041,CLINIC-002,11,M,Dog,2024-05-15,Active,Treatment A,11.2,7.4,17.8,52.0,355000,1,Minor inflammation
+VET042,CLINIC-001,3,F,Cat,2024-05-18,Active,Treatment B,6.8,5.5,11.6,34.0,232000,2,Normal
+VET043,CLINIC-003,7,M,Dog,2024-05-20,Completed,Control,9.0,6.4,15.0,44.0,288000,3,Clear
+VET044,CLINIC-002,4,F,Cat,2024-05-22,Active,Treatment A,7.2,5.6,12.1,35.5,242000,2,Normal
+VET045,CLINIC-001,10,M,Dog,2024-05-25,Active,Control,10.8,7.1,16.2,47.5,318000,1,Minor inflammation
+VET046,CLINIC-004,6,F,Cat,2024-06-01,Active,Treatment B,8.0,6.0,13.0,38.5,265000,2,Normal
+VET047,CLINIC-002,5,M,Dog,2024-06-05,Completed,Treatment A,9.5,6.6,15.5,45.5,300000,3,Clear
+VET048,CLINIC-001,2,F,Cat,2024-06-08,Active,Control,6.5,5.2,10.9,32.5,208000,1,Minor inflammation
+VET049,CLINIC-003,8,M,Dog,2024-06-10,Active,Treatment B,10.2,6.8,16.0,47.0,322000,2,Normal
+VET050,CLINIC-003,4,F,Cat,2024-06-12,Completed,Control,7.6,5.7,12.4,36.5,248000,3,Clear

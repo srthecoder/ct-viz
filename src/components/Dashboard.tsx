@@ -20,29 +20,33 @@ const Dashboard: React.FC = () => {
     site: string
     gender: string
     treatment: string
+    species: string
   }>({
     site: 'all',
     gender: 'all',
-    treatment: 'all'
+    treatment: 'all',
+    species: 'all'
   })
 
   // Extract unique filter values dynamically from rawData
   // This runs whenever rawData changes, making filter options dynamic
   const filterOptions = useMemo(() => {
     if (!rawData || rawData.length === 0) {
-      return { sites: [], genders: [], treatments: [] }
+      return { sites: [], genders: [], treatments: [], species: [] }
     }
 
     const normalizeKey = (key: string) => key.toLowerCase().trim().replace(/\s+/g, '')
     const sites = new Set<string>()
     const genders = new Set<string>()
     const treatments = new Set<string>()
+    const species = new Set<string>()
 
     rawData.forEach((row) => {
       // Try canonical field names first (from mapping wizard transformation)
       let siteId = row['siteId'] || row['siteid']
       let gender = row['gender'] || row['sex']
       let treatment = row['treatment'] || row['treatmentgroup'] || row['arm'] || row['treatmentGroup']
+      let speciesValue = row['species'] || row['animalType'] || row['animal_type']
       
       // Fallback to normalized lookup if canonical names not found
       if (!siteId || !gender || !treatment) {
@@ -60,25 +64,30 @@ const Dashboard: React.FC = () => {
         if (!treatment) {
           treatment = normalizedRow['treatment'] || normalizedRow['treatmentgroup'] || normalizedRow['arm']
         }
+        if (!speciesValue) {
+          speciesValue = normalizedRow['species'] || normalizedRow['animaltype'] || normalizedRow['animal_type']
+        }
       }
 
       // Add unique values to sets
       if (siteId) sites.add(String(siteId))
       if (gender) genders.add(String(gender).charAt(0).toUpperCase())
       if (treatment) treatments.add(String(treatment))
+      if (speciesValue) species.add(String(speciesValue))
     })
 
     return {
       sites: Array.from(sites).sort(),
       genders: Array.from(genders).sort(),
-      treatments: Array.from(treatments).sort()
+      treatments: Array.from(treatments).sort(),
+      species: Array.from(species).sort()
     }
   }, [rawData])
 
   // Filter raw data dynamically based on selected filters
   const filteredRawData = useMemo(() => {
     if (!rawData) return []
-    if (filters.site === 'all' && filters.gender === 'all' && filters.treatment === 'all') {
+    if (filters.site === 'all' && filters.gender === 'all' && filters.treatment === 'all' && filters.species === 'all') {
       return rawData
     }
 
@@ -89,6 +98,7 @@ const Dashboard: React.FC = () => {
       let siteId = row['siteId'] || row['siteid']
       let gender = row['gender'] || row['sex']
       let treatment = row['treatment'] || row['treatmentgroup'] || row['arm'] || row['treatmentGroup']
+      let speciesValue = row['species'] || row['animalType'] || row['animal_type']
       
       // Fallback to normalized lookup if canonical names not found
       if (!siteId || !gender || !treatment) {
@@ -106,12 +116,16 @@ const Dashboard: React.FC = () => {
         if (!treatment) {
           treatment = normalizedRow['treatment'] || normalizedRow['treatmentgroup'] || normalizedRow['arm']
         }
+        if (!speciesValue) {
+          speciesValue = normalizedRow['species'] || normalizedRow['animaltype'] || normalizedRow['animal_type']
+        }
       }
 
       // Apply filters
       if (filters.site !== 'all' && String(siteId) !== filters.site) return false
       if (filters.gender !== 'all' && String(gender).charAt(0).toUpperCase() !== filters.gender) return false
       if (filters.treatment !== 'all' && String(treatment) !== filters.treatment) return false
+      if (filters.species !== 'all' && String(speciesValue) !== filters.species) return false
 
       return true
     })
@@ -141,19 +155,19 @@ const Dashboard: React.FC = () => {
     URL.revokeObjectURL(link.href)
   }
 
-  const hasActiveFilters = filters.site !== 'all' || filters.gender !== 'all' || filters.treatment !== 'all'
+  const hasActiveFilters = filters.site !== 'all' || filters.gender !== 'all' || filters.treatment !== 'all' || filters.species !== 'all'
 
   const clearFilters = () => {
-    setFilters({ site: 'all', gender: 'all', treatment: 'all' })
+    setFilters({ site: 'all', gender: 'all', treatment: 'all', species: 'all' })
   }
 
   if (!clinicalData || !metrics || !rawData) {
     return (
       <div className="space-y-6">
         <div className="bg-white rounded-lg shadow-sm p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Welcome to CT-Viz</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Welcome to Vet-Viz</h2>
           <p className="text-gray-600 mb-6">
-            Upload any dataset to begin visualizing your data. The dashboard will automatically adapt to show insights specific to your data.
+            Upload your veterinary trial data (CSV format) to visualize patient records, blood reports, X-ray scans, and more. The dashboard automatically adapts to your data structure.
           </p>
           <DataUpload />
         </div>
@@ -270,6 +284,19 @@ const Dashboard: React.FC = () => {
               ))}
             </select>
 
+            {filterOptions.species.length > 0 && (
+              <select
+                value={filters.species}
+                onChange={(e) => setFilters({ ...filters, species: e.target.value })}
+                className="px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              >
+                <option value="all">All Species</option>
+                {filterOptions.species.map(species => (
+                  <option key={species} value={species}>{species}</option>
+                ))}
+              </select>
+            )}
+
             {hasActiveFilters && (
               <button
                 onClick={clearFilters}
@@ -348,16 +375,16 @@ const Dashboard: React.FC = () => {
       {/* Clinical-specific section (only if structure matches) */}
       {hasClinicalStructure && clinicalData.sites.length > 0 && (
         <div className="bg-white rounded-lg shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Site Performance</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Clinic Performance</h3>
           <div className="overflow-x-auto -mx-6 px-6">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Site ID
+                    Clinic ID
                   </th>
                   <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Site Name
+                    Clinic Name
                   </th>
                   <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Enrollment

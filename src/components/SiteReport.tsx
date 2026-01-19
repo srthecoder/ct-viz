@@ -27,7 +27,7 @@ const SiteReport: React.FC = () => {
   if (!clinicalData || !siteId) {
     return (
       <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-        <p className="text-gray-600">Site not found or no data available.</p>
+        <p className="text-gray-600">Clinic not found or no data available.</p>
         <Link to="/" className="text-primary-600 hover:text-primary-800 mt-4 inline-block">
           Return to Dashboard
         </Link>
@@ -41,7 +41,7 @@ const SiteReport: React.FC = () => {
   if (!site || sitePatients.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-        <p className="text-gray-600">No patients found for this site.</p>
+        <p className="text-gray-600">No patients found for this clinic.</p>
         <Link to="/" className="text-primary-600 hover:text-primary-800 mt-4 inline-block">
           Return to Dashboard
         </Link>
@@ -135,12 +135,12 @@ const SiteReport: React.FC = () => {
           </Link>
           <div>
             <h2 className="text-2xl font-bold text-gray-900">{site.siteName}</h2>
-            <p className="text-sm text-gray-500">Site ID: {siteId}</p>
+            <p className="text-sm text-gray-500">Clinic ID: {siteId}</p>
           </div>
         </div>
       </div>
 
-      {/* Site Metrics */}
+      {/* Clinic Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <MetricCard
           title="Total Patients"
