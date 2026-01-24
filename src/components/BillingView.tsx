@@ -11,10 +11,9 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer
 } from 'recharts'
-import { DollarSign, TrendingUp, AlertCircle, CheckCircle2, Clock } from 'lucide-react'
+import { DollarSign, TrendingUp, AlertCircle, CheckCircle2 } from 'lucide-react'
 
 interface BillingViewProps {
   rawData: any[]

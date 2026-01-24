@@ -2,13 +2,10 @@ import React, { useMemo, useState } from 'react'
 import {
   LineChart,
   Line,
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   ReferenceLine
 } from 'recharts'
@@ -246,7 +243,7 @@ const LabResultsView: React.FC<LabResultsViewProps> = ({ rawData }) => {
       </div>
 
       {/* Current vs Historical Comparison */}
-      {comparisonData && comparisonData.current !== undefined && (
+      {comparisonData && !Array.isArray(comparisonData) && comparisonData.current !== undefined && (
         <div className="bg-white rounded-lg shadow-sm p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Current vs. Historical Average</h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -309,7 +306,6 @@ const LabResultsView: React.FC<LabResultsViewProps> = ({ rawData }) => {
               <XAxis dataKey="date" />
               <YAxis />
               <Tooltip />
-              <Legend />
               <ReferenceLine 
                 y={availableParameters.find(p => p.key === selectedParameter)?.normalRange.min} 
                 stroke="orange" 
@@ -351,28 +347,31 @@ const LabResultsView: React.FC<LabResultsViewProps> = ({ rawData }) => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {summaryStats.map((stat, idx) => (
-                <tr key={idx} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm font-medium text-gray-900">{stat.parameter}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{stat.avg}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{stat.min}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{stat.max}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">
-                    {stat.abnormalCount} ({stat.abnormalPercent.toFixed(1)}%)
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      stat.abnormalPercent > 20 
-                        ? 'bg-red-100 text-red-800' 
-                        : stat.abnormalPercent > 10
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-green-100 text-green-800'
-                    }`}>
-                      {stat.abnormalPercent > 20 ? 'High Alert' : stat.abnormalPercent > 10 ? 'Monitor' : 'Normal'}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {summaryStats.map((stat, idx) => {
+                if (!stat) return null
+                return (
+                  <tr key={idx} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{stat.parameter}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{stat.avg}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{stat.min}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{stat.max}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">
+                      {stat.abnormalCount} ({stat.abnormalPercent.toFixed(1)}%)
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        stat.abnormalPercent > 20 
+                          ? 'bg-red-100 text-red-800' 
+                          : stat.abnormalPercent > 10
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-green-100 text-green-800'
+                      }`}>
+                        {stat.abnormalPercent > 20 ? 'High Alert' : stat.abnormalPercent > 10 ? 'Monitor' : 'Normal'}
+                      </span>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

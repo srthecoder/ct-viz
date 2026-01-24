@@ -8,10 +8,9 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer
 } from 'recharts'
-import { Pill, Calendar, CheckCircle2, AlertCircle, Clock } from 'lucide-react'
+import { Pill, CheckCircle2, AlertCircle, Clock } from 'lucide-react'
 
 interface MedicationViewProps {
   rawData: any[]

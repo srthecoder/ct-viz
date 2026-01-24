@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react'
 import { Upload, FileText, X, Sparkles } from 'lucide-react'
-import { parseCSV, processClinicalData, generateSampleClinicalData } from '../utils/dataCleaning'
+import { parseCSV, processClinicalData } from '../utils/dataCleaning'
 import { useData } from '../context/DataContext'
 import MappingWizard from './MappingWizard'
 import { ColumnMappingState } from '../types'

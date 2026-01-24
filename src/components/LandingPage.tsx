@@ -8,8 +8,7 @@ import {
   BarChart3,
   Upload,
   Clock,
-  CheckCircle2,
-  ArrowRight
+  CheckCircle2
 } from 'lucide-react'
 import DataUpload from './DataUpload'
 
