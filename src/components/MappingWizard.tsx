@@ -111,9 +111,9 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
       <div className="flex items-center justify-between border-b border-gray-200 p-4">
         <div>
           <p className="text-xs uppercase tracking-wide text-primary-600 font-semibold">Step 2</p>
-          <h3 className="text-lg font-semibold text-gray-900">Map CSV Columns to Trial Concepts</h3>
+          <h3 className="text-lg font-semibold text-gray-900">Map CSV Columns to Data Fields</h3>
           <p className="text-sm text-gray-500">
-            Review the auto-suggestions and fix any ambiguous mappings before continuing.
+            Review the auto-suggestions and map your columns. Unmapped columns will default to "Other" and be preserved.
           </p>
         </div>
         <button
@@ -152,7 +152,7 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
           </div>
         ) : (
           <div className="flex items-center space-x-2 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
-            <span>All required concepts are mapped. You can proceed to the next step. Optional columns can be mapped, set to "Other" (preserved with custom name), or "Ignore" (dropped).</span>
+            <span>All required fields are mapped. You can proceed to the next step. Unmapped columns default to "Other" and will be preserved. You can also set columns to "Ignore" to drop them.</span>
           </div>
         )}
 
@@ -237,10 +237,10 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
                             <div className="relative flex-1">
                               <select
                                 className="appearance-none w-full rounded-md border border-gray-300 bg-white px-3 py-2 pr-8 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                value={mapping.concept || ''}
-                                onChange={(event) => handleConceptChange(mapping.columnName, event.target.value === '' ? undefined : event.target.value)}
+                                value={mapping.concept || 'other'}
+                                onChange={(event) => handleConceptChange(mapping.columnName, event.target.value)}
                               >
-                                <option value="">Select concept...</option>
+                                <option value="other">Other (default)</option>
                                 {requiredConceptOptions.length > 0 && (
                                   <optgroup label="Required">
                                     {requiredConceptOptions.map(renderConceptOption)}
@@ -251,7 +251,6 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
                                     {optionalConceptOptions.map(renderConceptOption)}
                                   </optgroup>
                                 )}
-                                <option value="other">Other</option>
                                 <option value="ignore">Ignore</option>
                               </select>
                               <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
@@ -280,8 +279,8 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
                           Ignore
                         </span>
                       ) : (
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
-                          Not found
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200">
+                          Default: Other
                         </span>
                       )}
                     </td>

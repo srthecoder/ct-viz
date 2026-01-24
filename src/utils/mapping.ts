@@ -3,78 +3,78 @@ import { ColumnMappingState, TrialConceptDefinition, TrialConceptId } from '../t
 export const TRIAL_CONCEPTS: TrialConceptDefinition[] = [
   {
     id: 'subjectId',
-    label: 'Subject ID',
-    description: 'Unique identifier for each patient/participant',
+    label: 'Patient ID',
+    description: 'Unique identifier for each patient/animal',
     required: true,
-    keywords: ['patientid', 'subjectid', 'participantid', 'patient_id', 'subject_id', 'participant_id']
+    keywords: ['patientid', 'patient_id', 'id', 'animalid', 'animal_id', 'subjectid', 'subject_id', 'participantid', 'participant_id']
   },
   {
     id: 'siteId',
-    label: 'Site ID',
-    description: 'Identifier of the site enrolling the subject',
+    label: 'Clinic ID',
+    description: 'Identifier of the clinic or veterinary facility',
     required: true,
-    keywords: ['siteid', 'site_id', 'site', 'location', 'centre', 'center', 'facility', 'clinic', 'institution']
+    keywords: ['siteid', 'site_id', 'site', 'clinic', 'clinicid', 'clinic_id', 'location', 'centre', 'center', 'facility', 'institution', 'practice']
   },
   {
     id: 'visitId',
-    label: 'Visit',
-    description: 'Visit label, visit number, or visit date',
+    label: 'Visit / Appointment',
+    description: 'Visit label, visit number, or appointment date',
     required: false,
-    keywords: ['visit', 'visitnumber', 'visit_id']
+    keywords: ['visit', 'visitnumber', 'visit_id', 'visitdate', 'appointment', 'appointmentdate', 'appointment_date']
   },
   {
     id: 'treatment',
-    label: 'Treatment / Arm',
-    description: 'Treatment group or study arm',
+    label: 'Treatment / Therapy',
+    description: 'Treatment group, therapy type, or intervention',
     required: true,
-    keywords: ['treatment', 'arm', 'group', 'therapy']
+    keywords: ['treatment', 'treatmentgroup', 'treatment_group', 'therapy', 'therapyname', 'arm', 'group', 'intervention']
   },
   {
     id: 'status',
-    label: 'Status',
-    description: 'Enrollment or patient status',
+    label: 'Patient Status',
+    description: 'Patient or enrollment status (Active, Completed, etc.)',
     required: true,
-    keywords: ['status', 'patientstatus', 'enrollmentstatus', 'state']
+    keywords: ['status', 'patientstatus', 'patient_status', 'enrollmentstatus', 'enrollment_status', 'state', 'condition']
   },
   {
     id: 'age',
     label: 'Age',
-    description: 'Patient age or age bucket',
+    description: 'Patient/animal age in years or months',
     required: false,
-    keywords: ['age', 'patientage']
+    keywords: ['age', 'patientage', 'patient_age', 'animalage', 'animal_age']
   },
   {
     id: 'gender',
     label: 'Gender / Sex',
-    description: 'Patient gender or sex',
+    description: 'Patient/animal gender or sex',
     required: false,
-    keywords: ['gender', 'sex']
+    keywords: ['gender', 'sex', 'patientgender', 'patient_gender', 'animalgender', 'animal_gender']
   },
   {
     id: 'outcome',
-    label: 'Outcome',
-    description: 'Response or outcome flag',
+    label: 'Outcome / Result',
+    description: 'Treatment response or clinical outcome',
     required: false,
-    keywords: ['outcome', 'response', 'result']
+    keywords: ['outcome', 'response', 'result', 'treatmentoutcome', 'treatment_outcome', 'clinicaloutcome', 'clinical_outcome']
   },
   {
     id: 'adverseEvent',
     label: 'Adverse Event',
-    description: 'Flag or description for adverse events',
+    description: 'Adverse event flag or description',
     required: false,
-    keywords: ['adverseevent', 'ae', 'seriousadverseevent']
+    keywords: ['adverseevent', 'adverse_event', 'ae', 'seriousadverseevent', 'serious_adverse_event', 'sideeffect', 'side_effect']
   },
   {
     id: 'enrollmentDate',
-    label: 'Enrollment Date',
-    description: 'Date subject enrolled or visit occurred',
+    label: 'Date',
+    description: 'Enrollment date, visit date, or appointment date',
     required: true,
-    keywords: ['enrollmentdate', 'enrollment_date', 'date', 'visitdate', 'randomizationdate']
+    keywords: ['date', 'enrollmentdate', 'enrollment_date', 'visitdate', 'visit_date', 'appointmentdate', 'appointment_date', 'randomizationdate', 'randomization_date', 'entrydate', 'entry_date']
   },
   {
     id: 'ignore',
     label: 'Ignore',
-    description: 'Column will be dropped and not used in downstream dashboards',
+    description: 'Column will be dropped and not used in dashboards',
     required: false,
     keywords: []
   },
@@ -152,14 +152,16 @@ export const initializeColumnMappings = (columns: string[]): ColumnMappingState[
       }
     }
 
-    // Default optional columns to undefined (unmapped) if no match found
-    // User must explicitly choose "Ignore" or "Other" or map to a concept
+    // Default all unmapped columns to "other" if no match found
+    // Required columns must be mapped, optional columns default to "other"
     const isRequired = bestMatch?.concept.required || false
 
     return {
       columnName: column,
       displayName: column,
-      concept: isRequired ? bestMatch?.concept.id : (bestMatch?.concept.id || undefined),
+      concept: isRequired 
+        ? (bestMatch?.concept.id || undefined)  // Required columns must be mapped
+        : (bestMatch?.concept.id || 'other'),   // Optional columns default to "other"
       confidence: bestMatch?.confidence || 'low',
       autoMatched: Boolean(bestMatch)
     }
