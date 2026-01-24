@@ -7,7 +7,6 @@ import LandingPage from './LandingPage'
 import LabResultsView from './LabResultsView'
 import MedicationView from './MedicationView'
 import BillingView from './BillingView'
-import CollapsibleSection from './CollapsibleSection'
 import { 
   Database,
   TrendingUp,
@@ -18,8 +17,7 @@ import {
   X,
   Activity,
   Pill,
-  DollarSign,
-  Building2
+  DollarSign
 } from 'lucide-react'
 
 const Dashboard: React.FC = () => {
@@ -170,6 +168,23 @@ const Dashboard: React.FC = () => {
     setFilters({ site: 'all', gender: 'all', treatment: 'all', species: 'all' })
   }
 
+  const [activeTab, setActiveTab] = useState<'overview' | 'lab' | 'medications' | 'billing'>('overview')
+
+  // Check if we have lab, medication, or billing data
+  const hasLabData = useMemo(() => rawData?.some(row => {
+    const keys = Object.keys(row).map(k => k.toLowerCase())
+    return keys.some(k => ['wbc', 'rbc', 'hemoglobin', 'hematocrit', 'platelets', 'glucose', 'bun', 'creatinine', 'alt', 'ast'].includes(k))
+  }), [rawData])
+  
+  const hasMedicationData = useMemo(() => rawData?.some(row => {
+    const keys = Object.keys(row).map(k => k.toLowerCase())
+    return keys.some(k => ['medication', 'medicationname', 'drug', 'dosage', 'frequency', 'administered'].includes(k))
+  }), [rawData])
+  
+  const hasBillingData = useMemo(() => rawData?.some(row => {
+    const keys = Object.keys(row).map(k => k.toLowerCase())
+    return keys.some(k => ['amount', 'cost', 'payment', 'balance', 'billing', 'paymentstatus'].includes(k))
+  }), [rawData])
 
   if (!clinicalData || !metrics || !rawData) {
     return <LandingPage />
@@ -189,79 +204,23 @@ const Dashboard: React.FC = () => {
       color: 'blue' as const
     })) || []
 
-  // Check if we have lab, medication, or billing data (used for both metrics and tabs)
-  const hasLabData = useMemo(() => rawData.some(row => {
-    const keys = Object.keys(row).map(k => k.toLowerCase())
-    return keys.some(k => ['wbc', 'rbc', 'hemoglobin', 'hematocrit', 'platelets'].includes(k))
-  }), [rawData])
-  const hasMedicationData = useMemo(() => rawData.some(row => {
-    const keys = Object.keys(row).map(k => k.toLowerCase())
-    return keys.some(k => ['medication', 'drug', 'prescription', 'dosage'].includes(k))
-  }), [rawData])
-  const hasBillingData = useMemo(() => rawData.some(row => {
-    const keys = Object.keys(row).map(k => k.toLowerCase())
-    return keys.some(k => ['amount', 'cost', 'payment', 'billing', 'balance'].includes(k))
-  }), [rawData])
-
-  // Add dataset-level metrics - make them veterinary-relevant
-
-  const activePatients = clinicalData.patients.filter(p => p.status === 'Active' || p.status === 'active').length
-  const activePercent = clinicalData.patients.length > 0 
-    ? Math.round((activePatients / clinicalData.patients.length) * 100) 
-    : 0
-
-  const datasetMetrics: Array<{
-    title: string
-    value: string | number
-    subtitle: string
-    icon: React.ReactNode
-    color: 'blue' | 'green' | 'purple' | 'orange' | 'teal' | 'red'
-  }> = [
+  // Add dataset-level metrics
+  const datasetMetrics = [
     {
-      title: 'Total Patients',
-      value: clinicalData.patients.length,
-      subtitle: `${clinicalData.sites.length} clinics`,
+      title: 'Total Records',
+      value: insights?.rowCount || rawData.length,
+      subtitle: `${insights?.columnCount || 0} columns`,
       icon: <Database className="h-5 w-5" />,
-      color: 'blue'
+      color: 'blue' as const
     },
     {
-      title: 'Active Patients',
-      value: activePatients,
-      subtitle: `${activePercent}% of total`,
+      title: 'Complete Records',
+      value: insights?.columns.reduce((sum, col) => sum + col.count, 0) || 0,
+      subtitle: 'Total data points',
       icon: <FileText className="h-5 w-5" />,
-      color: 'green'
+      color: 'green' as const
     }
   ]
-
-  if (hasLabData) {
-    datasetMetrics.push({
-      title: 'Lab Results',
-      value: 'Available',
-      subtitle: 'Blood tests tracked',
-      icon: <Activity className="h-5 w-5" />,
-      color: 'orange'
-    })
-  }
-
-  if (hasMedicationData) {
-    datasetMetrics.push({
-      title: 'Medications',
-      value: 'Tracked',
-      subtitle: 'Administration records',
-      icon: <Pill className="h-5 w-5" />,
-      color: 'blue'
-    })
-  }
-
-  if (hasBillingData) {
-    datasetMetrics.push({
-      title: 'Billing Data',
-      value: 'Available',
-      subtitle: 'Financial records',
-      icon: <DollarSign className="h-5 w-5" />,
-      color: 'green'
-    })
-  }
 
   // Get columns suitable for visualization (exclude IDs and low-cardinality text)
   const visualizableColumns = insights?.columns.filter(col => {
@@ -280,12 +239,10 @@ const Dashboard: React.FC = () => {
     (row?.siteId || row?.site_id || row?.site)
   )
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'lab' | 'medications' | 'billing'>('overview')
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h2 className="text-2xl font-bold text-gray-900">Veterinary Practice Dashboard</h2>
+        <h2 className="text-2xl font-bold text-gray-900">Adaptive Data Dashboard</h2>
         <div className="flex items-center gap-3">
           {hasActiveFilters && (
             <button
@@ -300,87 +257,8 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Tab Navigation */}
-      {(hasLabData || hasMedicationData || hasBillingData) && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="border-b border-gray-200">
-            <nav className="flex -mb-px">
-              <button
-                onClick={() => setActiveTab('overview')}
-                className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === 'overview'
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Overview
-              </button>
-              {hasLabData && (
-                <button
-                  onClick={() => setActiveTab('lab')}
-                  className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
-                    activeTab === 'lab'
-                      ? 'border-red-600 text-red-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  <Activity className="h-4 w-4" />
-                  Lab Results
-                </button>
-              )}
-              {hasMedicationData && (
-                <button
-                  onClick={() => setActiveTab('medications')}
-                  className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
-                    activeTab === 'medications'
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  <Pill className="h-4 w-4" />
-                  Medications
-                </button>
-              )}
-              {hasBillingData && (
-                <button
-                  onClick={() => setActiveTab('billing')}
-                  className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
-                    activeTab === 'billing'
-                      ? 'border-green-600 text-green-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  <DollarSign className="h-4 w-4" />
-                  Billing
-                </button>
-              )}
-            </nav>
-          </div>
-        </div>
-      )}
-
-      {/* Tab Content */}
-      {activeTab === 'lab' && hasLabData && (
-        <LabResultsView rawData={filteredRawData} />
-      )}
-
-      {activeTab === 'medications' && hasMedicationData && (
-        <MedicationView rawData={filteredRawData} />
-      )}
-
-      {activeTab === 'billing' && hasBillingData && (
-        <BillingView rawData={filteredRawData} />
-      )}
-
-      {activeTab === 'overview' && (
-        <div className="space-y-4">
       {/* Filters */}
-      <CollapsibleSection
-        title="Filters"
-        icon={<Filter className="h-5 w-5" />}
-        defaultOpen={false}
-        badge={hasActiveFilters ? `${filteredRawData.length}/${rawData.length}` : undefined}
-      >
+      <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2">
             <Filter className="h-5 w-5 text-gray-500" />
@@ -451,15 +329,12 @@ const Dashboard: React.FC = () => {
             </div>
           )}
         </div>
-      </CollapsibleSection>
+      </div>
 
       {/* Dataset Overview */}
       {insights && (
-        <CollapsibleSection
-          title="Overview Metrics"
-          icon={<BarChart3 className="h-5 w-5" />}
-          defaultOpen={true}
-        >
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Dataset Overview</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {datasetMetrics.map((metric, idx) => (
               <MetricCard key={idx} {...metric} />
@@ -468,18 +343,16 @@ const Dashboard: React.FC = () => {
               <MetricCard key={`dynamic-${idx}`} {...metric} />
             ))}
           </div>
-        </CollapsibleSection>
+        </div>
       )}
 
       {/* Key Insights */}
       {insights && insights.highlights.length > 0 && (
-        <CollapsibleSection
-          title="Key Insights"
-          icon={<BarChart3 className="h-5 w-5" />}
-          defaultOpen={false}
-          badge={insights.highlights.length}
-          className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200"
-        >
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-sm p-6 border border-blue-200">
+          <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+            <BarChart3 className="h-5 w-5 mr-2 text-primary-600" />
+            Key Insights
+          </h3>
           <ul className="space-y-2">
             {insights.highlights.slice(0, 6).map((highlight, i) => (
               <li key={i} className="text-sm text-gray-700 flex items-start">
@@ -488,21 +361,20 @@ const Dashboard: React.FC = () => {
               </li>
             ))}
           </ul>
-        </CollapsibleSection>
+        </div>
       )}
 
       {/* Adaptive Visualizations */}
       {visualizableColumns.length > 0 && (
-        <CollapsibleSection
-          title="Data Visualizations"
-          icon={<BarChart3 className="h-5 w-5" />}
-          defaultOpen={true}
-          badge={visualizableColumns.length}
-        >
-          <p className="text-sm text-gray-500 mb-4">
-            {visualizableColumns.length} charts generated from your data
-            {hasActiveFilters && ` (filtered: ${filteredRawData.length} records)`}
-          </p>
+        <>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <h3 className="text-xl font-semibold text-gray-900">Data Visualizations</h3>
+            <p className="text-sm text-gray-500">
+              {visualizableColumns.length} charts generated from your data
+              {hasActiveFilters && ` (filtered: ${filteredRawData.length} records)`}
+            </p>
+          </div>
+          
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-6">
             {visualizableColumns.map((column) => (
               <AdaptiveChart
@@ -512,17 +384,13 @@ const Dashboard: React.FC = () => {
               />
             ))}
           </div>
-        </CollapsibleSection>
+        </>
       )}
 
       {/* Clinical-specific section (only if structure matches) */}
       {hasClinicalStructure && clinicalData.sites.length > 0 && (
-        <CollapsibleSection
-          title="Clinic Performance"
-          icon={<Building2 className="h-5 w-5" />}
-          defaultOpen={false}
-          badge={clinicalData.sites.length}
-        >
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Clinic Performance</h3>
           <div className="overflow-x-auto -mx-6 px-6">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -574,9 +442,9 @@ const Dashboard: React.FC = () => {
               </tbody>
             </table>
           </div>
-        </CollapsibleSection>
-      )}
         </div>
+      )}
+        </>
       )}
     </div>
   )
@@ -587,7 +455,7 @@ interface MetricCardProps {
   value: string | number
   subtitle?: string
   icon: React.ReactNode
-  color: 'blue' | 'green' | 'purple' | 'orange' | 'teal' | 'red'
+  color: 'blue' | 'green' | 'purple' | 'orange' | 'teal'
 }
 
 const MetricCard: React.FC<MetricCardProps> = ({ title, value, subtitle, icon, color }) => {
@@ -596,8 +464,7 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, subtitle, icon, c
     green: 'bg-green-100 text-green-600',
     purple: 'bg-purple-100 text-purple-600',
     orange: 'bg-orange-100 text-orange-600',
-    teal: 'bg-teal-100 text-teal-600',
-    red: 'bg-red-100 text-red-600'
+    teal: 'bg-teal-100 text-teal-600'
   }
 
   return (

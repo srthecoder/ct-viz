@@ -1,6 +1,6 @@
-import React, { ReactNode } from 'react'
+import React, { ReactNode, useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Activity, Home, Heart } from 'lucide-react'
+import { Database, Home } from 'lucide-react'
 import { useData } from '../context/DataContext'
 
 interface LayoutProps {
@@ -9,17 +9,39 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { clinicalData } = useData()
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
+
+  useEffect(() => {
+    if (clinicalData) {
+      setLastUpdate(new Date())
+    }
+  }, [clinicalData])
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLastUpdate(new Date())
+    }, 60000) // Update every minute
+
+    return () => clearInterval(interval)
+  }, [])
+
+  const getTimeAgo = (date: Date) => {
+    const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000)
+    if (seconds < 60) return 'just now'
+    const minutes = Math.floor(seconds / 60)
+    if (minutes < 60) return `${minutes}m ago`
+    const hours = Math.floor(minutes / 60)
+    if (hours < 24) return `${hours}h ago`
+    return `${Math.floor(hours / 24)}d ago`
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-green-50/30">
+    <div className="min-h-screen bg-gray-50">
       <nav className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <div className="relative">
-                <Heart className="h-8 w-8 text-red-600 mr-3" />
-                <Activity className="h-4 w-4 text-blue-600 absolute -bottom-1 -right-1 bg-white rounded-full p-0.5" />
-              </div>
+              <Database className="h-8 w-8 text-primary-600 mr-3" />
               <div>
                 <h1 className="text-xl font-bold text-gray-900">Vet-Viz</h1>
                 <p className="text-xs text-gray-500">Veterinary Practice Dashboard</p>
@@ -41,6 +63,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   </div>
                   <div className="text-sm text-gray-600">
                     {clinicalData.patients.length} patients across {clinicalData.sites.length} clinics
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    Updated {getTimeAgo(lastUpdate)}
                   </div>
                 </div>
               )}

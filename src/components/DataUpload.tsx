@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react'
 import { Upload, FileText, X, Sparkles } from 'lucide-react'
-import { parseCSV, processClinicalData } from '../utils/dataCleaning'
+import { parseCSV, processClinicalData, generateSampleClinicalData } from '../utils/dataCleaning'
 import { useData } from '../context/DataContext'
 import MappingWizard from './MappingWizard'
 import { ColumnMappingState } from '../types'
@@ -192,7 +192,7 @@ const DataUpload: React.FC = () => {
           <li>Billing: amount, cost, payment, balance, paymentStatus</li>
         </ul>
         <p className="text-xs text-blue-600">
-          Try the <span className="font-semibold">vet-comprehensive-data.csv</span> file for a complete example with all features.
+          Try the <span className="font-semibold">sample data</span> button for a complete example with all features.
         </p>
         <p className="text-xs text-blue-600">
           Column names are case-insensitive and will be automatically normalized
