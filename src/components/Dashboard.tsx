@@ -8,6 +8,7 @@ import LabResultsView from './LabResultsView'
 import MedicationView from './MedicationView'
 import BillingView from './BillingView'
 import CollapsibleSection from './CollapsibleSection'
+import HorizontalScrollContainer from './HorizontalScrollContainer'
 import { 
   Database,
   TrendingUp,
@@ -170,7 +171,6 @@ const Dashboard: React.FC = () => {
     setFilters({ site: 'all', gender: 'all', treatment: 'all', species: 'all' })
   }
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'lab' | 'medications' | 'billing'>('overview')
 
   if (!clinicalData || !metrics || !rawData) {
     return <LandingPage />
@@ -281,98 +281,29 @@ const Dashboard: React.FC = () => {
     (row?.siteId || row?.site_id || row?.site)
   )
 
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h2 className="text-2xl font-bold text-gray-900">Veterinary Practice Dashboard</h2>
-        <div className="flex items-center gap-3">
-          {hasActiveFilters && (
-            <button
-              onClick={handleExportCSV}
-              className="inline-flex items-center px-4 py-2 rounded-md text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-600 transition-colors"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Export CSV
-            </button>
-          )}
-          <DataUpload />
-        </div>
-      </div>
+  // Build sections array for horizontal scrolling
+  const sections: React.ReactNode[] = []
+  const sectionTitles: string[] = []
 
-      {/* Tab Navigation */}
-      {(hasLabData || hasMedicationData || hasBillingData) && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="border-b border-gray-200">
-            <nav className="flex -mb-px">
+  // Overview Section
+  sections.push(
+    <div key="overview" className="h-full overflow-y-auto">
+      <div className="max-w-7xl mx-auto px-6 py-8 space-y-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <h2 className="text-3xl font-bold text-gray-900">Overview</h2>
+          <div className="flex items-center gap-3">
+            {hasActiveFilters && (
               <button
-                onClick={() => setActiveTab('overview')}
-                className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === 'overview'
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                onClick={handleExportCSV}
+                className="inline-flex items-center px-4 py-2 rounded-md text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-600 transition-colors"
               >
-                Overview
+                <Download className="h-4 w-4 mr-2" />
+                Export CSV
               </button>
-              {hasLabData && (
-                <button
-                  onClick={() => setActiveTab('lab')}
-                  className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
-                    activeTab === 'lab'
-                      ? 'border-red-600 text-red-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  <Activity className="h-4 w-4" />
-                  Lab Results
-                </button>
-              )}
-              {hasMedicationData && (
-                <button
-                  onClick={() => setActiveTab('medications')}
-                  className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
-                    activeTab === 'medications'
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  <Pill className="h-4 w-4" />
-                  Medications
-                </button>
-              )}
-              {hasBillingData && (
-                <button
-                  onClick={() => setActiveTab('billing')}
-                  className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
-                    activeTab === 'billing'
-                      ? 'border-green-600 text-green-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  <DollarSign className="h-4 w-4" />
-                  Billing
-                </button>
-              )}
-            </nav>
+            )}
+            <DataUpload />
           </div>
         </div>
-      )}
-
-      {/* Tab Content */}
-      {activeTab === 'lab' && hasLabData && (
-        <LabResultsView rawData={filteredRawData} />
-      )}
-
-      {activeTab === 'medications' && hasMedicationData && (
-        <MedicationView rawData={filteredRawData} />
-      )}
-
-      {activeTab === 'billing' && hasBillingData && (
-        <BillingView rawData={filteredRawData} />
-      )}
-
-      {activeTab === 'overview' && (
-        <div className="space-y-4">
       {/* Filters */}
       <CollapsibleSection
         title="Filters"
@@ -575,9 +506,54 @@ const Dashboard: React.FC = () => {
           </div>
         </CollapsibleSection>
       )}
-        </div>
-      )}
+      </div>
     </div>
+  )
+  sectionTitles.push('Overview')
+
+  // Lab Results Section
+  if (hasLabData) {
+    sections.push(
+      <div key="lab" className="h-full overflow-y-auto">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <h2 className="text-3xl font-bold text-gray-900 mb-6">Lab Results</h2>
+          <LabResultsView rawData={filteredRawData} />
+        </div>
+      </div>
+    )
+    sectionTitles.push('Lab Results')
+  }
+
+  // Medications Section
+  if (hasMedicationData) {
+    sections.push(
+      <div key="medications" className="h-full overflow-y-auto">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <h2 className="text-3xl font-bold text-gray-900 mb-6">Medications</h2>
+          <MedicationView rawData={filteredRawData} />
+        </div>
+      </div>
+    )
+    sectionTitles.push('Medications')
+  }
+
+  // Billing Section
+  if (hasBillingData) {
+    sections.push(
+      <div key="billing" className="h-full overflow-y-auto">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <h2 className="text-3xl font-bold text-gray-900 mb-6">Billing</h2>
+          <BillingView rawData={filteredRawData} />
+        </div>
+      </div>
+    )
+    sectionTitles.push('Billing')
+  }
+
+  return (
+    <HorizontalScrollContainer sectionTitles={sectionTitles}>
+      {sections}
+    </HorizontalScrollContainer>
   )
 }
 
