@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, ReactNode } from 'react'
+import React, { useRef, useEffect, useState, ReactNode, useCallback } from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 
 interface ScrollReplacementContainerProps {
@@ -14,7 +14,7 @@ const ScrollReplacementContainer: React.FC<ScrollReplacementContainerProps> = ({
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isTransitioning, setIsTransitioning] = useState(false)
 
-  const goToSection = (index: number) => {
+  const goToSection = useCallback((index: number) => {
     if (index < 0 || index >= children.length || isTransitioning) return
     
     setIsTransitioning(true)
@@ -23,18 +23,36 @@ const ScrollReplacementContainer: React.FC<ScrollReplacementContainerProps> = ({
     setTimeout(() => {
       setIsTransitioning(false)
     }, 600) // Match transition duration
-  }
+  }, [children.length, isTransitioning])
 
   useEffect(() => {
-    const container = containerRef.current
-    if (!container) return
-
-    let wheelTimeout: NodeJS.Timeout | null = null
     let lastWheelTime = 0
-    const wheelCooldown = 600 // ms between section changes
+    const wheelCooldown = 800 // ms between section changes
 
     // Handle wheel events - convert vertical scroll to section navigation
     const handleWheel = (e: WheelEvent) => {
+      // Only handle if scrolling vertically
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return
+      
+      // Check if we're scrolling inside a scrollable element
+      const target = e.target as HTMLElement
+      const scrollableParent = target.closest('[data-scrollable]') as HTMLElement
+      
+      if (scrollableParent) {
+        const isAtTop = scrollableParent.scrollTop <= 0
+        const isAtBottom = scrollableParent.scrollTop + scrollableParent.clientHeight >= scrollableParent.scrollHeight - 1
+        
+        // If scrolling down and not at bottom, allow normal scroll
+        if (e.deltaY > 0 && !isAtBottom) {
+          return // Let it scroll normally
+        }
+        // If scrolling up and not at top, allow normal scroll
+        if (e.deltaY < 0 && !isAtTop) {
+          return // Let it scroll normally
+        }
+      }
+      
+      // Otherwise, prevent default and trigger section change
       e.preventDefault()
       e.stopPropagation()
       
@@ -61,18 +79,23 @@ const ScrollReplacementContainer: React.FC<ScrollReplacementContainerProps> = ({
 
     // Handle touch/swipe for mobile
     let touchStartY = 0
+    let touchStartTime = 0
     const handleTouchStart = (e: TouchEvent) => {
       touchStartY = e.touches[0].clientY
+      touchStartTime = Date.now()
     }
 
     const handleTouchEnd = (e: TouchEvent) => {
       if (isTransitioning) return
       
       const touchEndY = e.changedTouches[0].clientY
+      const touchEndTime = Date.now()
       const deltaY = touchStartY - touchEndY
+      const deltaTime = touchEndTime - touchStartTime
       const threshold = 50
+      const timeThreshold = 300 // Max time for swipe
 
-      if (Math.abs(deltaY) < threshold) return
+      if (Math.abs(deltaY) < threshold || deltaTime > timeThreshold) return
 
       if (deltaY > 0 && currentIndex < children.length - 1) {
         // Swipe up - next section
@@ -93,29 +116,37 @@ const ScrollReplacementContainer: React.FC<ScrollReplacementContainerProps> = ({
       } else if (e.key === 'ArrowUp' && currentIndex > 0) {
         e.preventDefault()
         goToSection(currentIndex - 1)
+      } else if (e.key === 'PageDown' && currentIndex < children.length - 1) {
+        e.preventDefault()
+        goToSection(currentIndex + 1)
+      } else if (e.key === 'PageUp' && currentIndex > 0) {
+        e.preventDefault()
+        goToSection(currentIndex - 1)
       }
     }
 
-    container.addEventListener('wheel', handleWheel, { passive: false })
-    container.addEventListener('touchstart', handleTouchStart, { passive: true })
-    container.addEventListener('touchend', handleTouchEnd, { passive: true })
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden'
+    
+    window.addEventListener('wheel', handleWheel, { passive: false, capture: true })
+    window.addEventListener('touchstart', handleTouchStart, { passive: true })
+    window.addEventListener('touchend', handleTouchEnd, { passive: true })
     window.addEventListener('keydown', handleKeyDown)
     
     return () => {
-      container.removeEventListener('wheel', handleWheel)
-      container.removeEventListener('touchstart', handleTouchStart)
-      container.removeEventListener('touchend', handleTouchEnd)
+      document.body.style.overflow = ''
+      window.removeEventListener('wheel', handleWheel, { capture: true })
+      window.removeEventListener('touchstart', handleTouchStart)
+      window.removeEventListener('touchend', handleTouchEnd)
       window.removeEventListener('keydown', handleKeyDown)
-      if (wheelTimeout) {
-        clearTimeout(wheelTimeout)
-      }
     }
-  }, [currentIndex, isTransitioning, children.length])
+  }, [currentIndex, isTransitioning, children.length, goToSection])
 
   return (
     <div 
       ref={containerRef}
       className="relative w-full h-full overflow-hidden"
+      style={{ touchAction: 'none' }}
     >
       {/* Navigation Dots */}
       <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 flex gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg border border-gray-200">

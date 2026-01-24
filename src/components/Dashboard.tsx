@@ -287,8 +287,9 @@ const Dashboard: React.FC = () => {
 
   // Overview Section
   sections.push(
-    <div key="overview" className="h-full overflow-y-auto bg-gradient-to-br from-gray-50 via-blue-50/30 to-green-50/30">
-      <div className="max-w-7xl mx-auto px-6 py-8 space-y-4">
+    <div key="overview" className="h-full overflow-hidden bg-gradient-to-br from-gray-50 via-blue-50/30 to-green-50/30">
+      <div className="h-full overflow-y-auto" data-scrollable style={{ overscrollBehavior: 'contain' }}>
+        <div className="max-w-7xl mx-auto px-6 py-8 space-y-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <h2 className="text-3xl font-bold text-gray-900">Overview</h2>
           <div className="flex items-center gap-3">
@@ -506,6 +507,7 @@ const Dashboard: React.FC = () => {
           </div>
         </CollapsibleSection>
       )}
+        </div>
       </div>
     </div>
   )
@@ -514,10 +516,12 @@ const Dashboard: React.FC = () => {
   // Lab Results Section
   if (hasLabData) {
     sections.push(
-      <div key="lab" className="h-full overflow-y-auto bg-gradient-to-br from-red-50/50 via-white to-orange-50/30">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">Lab Results</h2>
-          <LabResultsView rawData={filteredRawData} />
+      <div key="lab" className="h-full overflow-hidden bg-gradient-to-br from-red-50/50 via-white to-orange-50/30">
+        <div className="h-full overflow-y-auto" data-scrollable style={{ overscrollBehavior: 'contain' }}>
+          <div className="max-w-7xl mx-auto px-6 py-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-6">Lab Results</h2>
+            <LabResultsView rawData={filteredRawData} />
+          </div>
         </div>
       </div>
     )
@@ -527,10 +531,12 @@ const Dashboard: React.FC = () => {
   // Medications Section
   if (hasMedicationData) {
     sections.push(
-      <div key="medications" className="h-full overflow-y-auto bg-gradient-to-br from-blue-50/50 via-white to-indigo-50/30">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">Medications</h2>
-          <MedicationView rawData={filteredRawData} />
+      <div key="medications" className="h-full overflow-hidden bg-gradient-to-br from-blue-50/50 via-white to-indigo-50/30">
+        <div className="h-full overflow-y-auto" data-scrollable style={{ overscrollBehavior: 'contain' }}>
+          <div className="max-w-7xl mx-auto px-6 py-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-6">Medications</h2>
+            <MedicationView rawData={filteredRawData} />
+          </div>
         </div>
       </div>
     )
@@ -540,10 +546,12 @@ const Dashboard: React.FC = () => {
   // Billing Section
   if (hasBillingData) {
     sections.push(
-      <div key="billing" className="h-full overflow-y-auto bg-gradient-to-br from-green-50/50 via-white to-emerald-50/30">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">Billing</h2>
-          <BillingView rawData={filteredRawData} />
+      <div key="billing" className="h-full overflow-hidden bg-gradient-to-br from-green-50/50 via-white to-emerald-50/30">
+        <div className="h-full overflow-y-auto" data-scrollable style={{ overscrollBehavior: 'contain' }}>
+          <div className="max-w-7xl mx-auto px-6 py-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-6">Billing</h2>
+            <BillingView rawData={filteredRawData} />
+          </div>
         </div>
       </div>
     )
