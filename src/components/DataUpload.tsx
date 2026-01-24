@@ -185,7 +185,16 @@ const DataUpload: React.FC = () => {
           Your CSV should include columns such as: patientId, siteId, age, gender, species, enrollmentDate, status, treatment
         </p>
         <p className="text-xs text-blue-700 mb-2">
-          <strong>Veterinary-specific:</strong> You can include columns for blood reports (e.g., WBC, RBC, Hemoglobin) and X-ray scan results (e.g., XRayScore, XRayFindings). These will be automatically visualized.
+          <strong>Veterinary-specific:</strong> Include columns for:
+        </p>
+        <ul className="text-xs text-blue-700 mb-2 list-disc list-inside">
+          <li>Blood reports: WBC, RBC, Hemoglobin, Hematocrit, Platelets, Glucose, BUN, Creatinine, ALT, AST</li>
+          <li>X-ray scans: XRayScore, XRayFindings</li>
+          <li>Medications: medication, medicationName, dosage, frequency, administered</li>
+          <li>Billing: amount, cost, payment, balance, paymentStatus</li>
+        </ul>
+        <p className="text-xs text-blue-600">
+          Try the <span className="font-semibold">vet-comprehensive-data.csv</span> file for a complete example with all features.
         </p>
         <p className="text-xs text-blue-600">
           Column names are case-insensitive and will be automatically normalized

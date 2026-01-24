@@ -3,6 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { useData } from '../context/DataContext'
 import DataUpload from './DataUpload'
 import AdaptiveChart from './AdaptiveChart'
+import LandingPage from './LandingPage'
+import LabResultsView from './LabResultsView'
+import MedicationView from './MedicationView'
+import BillingView from './BillingView'
 import { 
   Database,
   TrendingUp,
@@ -10,7 +14,10 @@ import {
   BarChart3,
   Filter,
   Download,
-  X
+  X,
+  Activity,
+  Pill,
+  DollarSign
 } from 'lucide-react'
 
 const Dashboard: React.FC = () => {
@@ -161,18 +168,10 @@ const Dashboard: React.FC = () => {
     setFilters({ site: 'all', gender: 'all', treatment: 'all', species: 'all' })
   }
 
+  const [activeTab, setActiveTab] = useState<'overview' | 'lab' | 'medications' | 'billing'>('overview')
+
   if (!clinicalData || !metrics || !rawData) {
-    return (
-      <div className="space-y-6">
-        <div className="bg-white rounded-lg shadow-sm p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Welcome to Vet-Viz</h2>
-          <p className="text-gray-600 mb-6">
-            Upload your veterinary trial data (CSV format) to visualize patient records, blood reports, X-ray scans, and more. The dashboard automatically adapts to your data structure.
-          </p>
-          <DataUpload />
-        </div>
-      </div>
-    )
+    return <LandingPage />
   }
 
   const insights = clinicalData.metadata?.insights
@@ -224,10 +223,24 @@ const Dashboard: React.FC = () => {
     (row?.siteId || row?.site_id || row?.site)
   )
 
+  // Check if we have lab, medication, or billing data
+  const hasLabData = rawData.some(row => {
+    const keys = Object.keys(row).map(k => k.toLowerCase())
+    return keys.some(k => ['wbc', 'rbc', 'hemoglobin', 'hematocrit', 'platelets'].includes(k))
+  })
+  const hasMedicationData = rawData.some(row => {
+    const keys = Object.keys(row).map(k => k.toLowerCase())
+    return keys.some(k => ['medication', 'drug', 'prescription', 'dosage'].includes(k))
+  })
+  const hasBillingData = rawData.some(row => {
+    const keys = Object.keys(row).map(k => k.toLowerCase())
+    return keys.some(k => ['amount', 'cost', 'payment', 'billing', 'balance'].includes(k))
+  })
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h2 className="text-2xl font-bold text-gray-900">Adaptive Data Dashboard</h2>
+        <h2 className="text-2xl font-bold text-gray-900">Veterinary Practice Dashboard</h2>
         <div className="flex items-center gap-3">
           {hasActiveFilters && (
             <button
@@ -241,6 +254,81 @@ const Dashboard: React.FC = () => {
           <DataUpload />
         </div>
       </div>
+
+      {/* Tab Navigation */}
+      {(hasLabData || hasMedicationData || hasBillingData) && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="border-b border-gray-200">
+            <nav className="flex -mb-px">
+              <button
+                onClick={() => setActiveTab('overview')}
+                className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 'overview'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Overview
+              </button>
+              {hasLabData && (
+                <button
+                  onClick={() => setActiveTab('lab')}
+                  className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+                    activeTab === 'lab'
+                      ? 'border-red-600 text-red-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <Activity className="h-4 w-4" />
+                  Lab Results
+                </button>
+              )}
+              {hasMedicationData && (
+                <button
+                  onClick={() => setActiveTab('medications')}
+                  className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+                    activeTab === 'medications'
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <Pill className="h-4 w-4" />
+                  Medications
+                </button>
+              )}
+              {hasBillingData && (
+                <button
+                  onClick={() => setActiveTab('billing')}
+                  className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+                    activeTab === 'billing'
+                      ? 'border-green-600 text-green-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <DollarSign className="h-4 w-4" />
+                  Billing
+                </button>
+              )}
+            </nav>
+          </div>
+        </div>
+      )}
+
+      {/* Tab Content */}
+      {activeTab === 'lab' && hasLabData && (
+        <LabResultsView rawData={filteredRawData} />
+      )}
+
+      {activeTab === 'medications' && hasMedicationData && (
+        <MedicationView rawData={filteredRawData} />
+      )}
+
+      {activeTab === 'billing' && hasBillingData && (
+        <BillingView rawData={filteredRawData} />
+      )}
+
+      {activeTab === 'overview' && (
+        <>
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
@@ -428,6 +516,8 @@ const Dashboard: React.FC = () => {
             </table>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   )
