@@ -9,10 +9,8 @@ import {
   Upload,
   Clock,
   Shield,
-  Zap,
-  Calendar
+  Zap
 } from 'lucide-react'
-import { Link } from 'react-router-dom'
 import DataUpload from './DataUpload'
 
 const LandingPage: React.FC = () => {

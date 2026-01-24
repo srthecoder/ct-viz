@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import { Pill, Calendar, CheckCircle2 } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 
 interface MedicationViewProps {
   rawData: any[]

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react'
-import { DollarSign, TrendingUp, TrendingDown, CreditCard, Receipt } from 'lucide-react'
+import { DollarSign, TrendingUp, CreditCard, Receipt } from 'lucide-react'
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 
 interface BillingViewProps {
@@ -19,6 +19,8 @@ const BillingView: React.FC<BillingViewProps> = ({ rawData }) => {
     if (!rawData || rawData.length === 0) return []
 
     const firstRow = rawData[0]
+    if (!firstRow) return []
+
     const hasBillingData = billingColumns.some(col => 
       Object.keys(firstRow).some(key => 
         key.toLowerCase().includes(col.toLowerCase())
@@ -30,21 +32,21 @@ const BillingView: React.FC<BillingViewProps> = ({ rawData }) => {
     return rawData.map(row => {
       // Try to find amount/cost column
       const amount = parseFloat(
-        row['amount'] || row['cost'] || row['price'] || row['fee'] || row['charge'] || '0'
+        String(row['amount'] || row['cost'] || row['price'] || row['fee'] || row['charge'] || '0')
       )
       
-      const payment = row['payment'] || row['paid'] || '0'
-      const balance = parseFloat(row['balance'] || row['outstanding'] || '0')
-      const status = (row['paymentStatus'] || row['status'] || 'pending').toString().toLowerCase()
+      const payment = String(row['payment'] || row['paid'] || '0')
+      const balance = parseFloat(String(row['balance'] || row['outstanding'] || '0'))
+      const status = String(row['paymentStatus'] || row['status'] || 'pending').toLowerCase()
       const date = row['enrollmentDate'] || row['enrollment_date'] || row['date'] || row['visitDate'] || row['visit_date']
       const patientId = row['patientId'] || row['patient_id'] || row['id']
 
       return {
         amount: isNaN(amount) ? 0 : amount,
-        payment: isNaN(parseFloat(String(payment))) ? 0 : parseFloat(String(payment))),
+        payment: isNaN(parseFloat(payment)) ? 0 : parseFloat(payment),
         balance: isNaN(balance) ? 0 : balance,
         status: status,
-        date: date ? date.split('T')[0] : null,
+        date: date ? String(date).split('T')[0] : null,
         patientId: String(patientId)
       }
     }).filter(item => item.amount > 0 || item.balance > 0)

@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import { Activity, TrendingUp, TrendingDown, Minus } from 'lucide-react'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
 interface LabResultsViewProps {
   rawData: any[]
