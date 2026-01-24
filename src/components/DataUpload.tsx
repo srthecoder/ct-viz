@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react'
 import { Upload, FileText, X, Sparkles } from 'lucide-react'
-import { parseCSV, processClinicalData, generateSampleClinicalData } from '../utils/dataCleaning'
+import { parseCSV, processClinicalData } from '../utils/dataCleaning'
 import { useData } from '../context/DataContext'
 import MappingWizard from './MappingWizard'
 import { ColumnMappingState } from '../types'
@@ -72,24 +72,22 @@ const DataUpload: React.FC = () => {
   const handleUseSampleData = async () => {
     setIsProcessing(true)
     try {
-      const sample = generateSampleClinicalData({ numSites: 6, numPatients: 300, months: 9 })
-      // Convert sample patients back to raw format for adaptive charts
-      const rawSampleData = sample.patients.map(p => ({
-        patientId: p.patientId,
-        siteId: p.siteId,
-        age: p.age,
-        gender: p.gender,
-        enrollmentDate: p.enrollmentDate,
-        status: p.status,
-        treatment: p.treatment
-      }))
-      loadData(sample, rawSampleData)
-      setUploadedFileName('Sample data')
-      setShowMapping(false)
-      setRawPreview(null)
+      // Load the comprehensive veterinary data CSV file
+      // Try both paths (with and without base path)
+      let response = await fetch('/vet-comprehensive-data.csv')
+      if (!response.ok) {
+        response = await fetch('/ct-viz/vet-comprehensive-data.csv')
+      }
+      if (!response.ok) {
+        throw new Error('Could not load sample data file')
+      }
+      const csvText = await response.text()
+      const file = new File([csvText], 'vet-comprehensive-data.csv', { type: 'text/csv' })
+      // Use handleFile which will trigger the mapping wizard
+      await handleFile(file)
     } catch (error) {
-      console.error('Error generating sample data:', error)
-      alert('Could not generate sample data.')
+      console.error('Error loading sample data:', error)
+      alert('Could not load sample data. Please upload a CSV file instead.')
     } finally {
       setIsProcessing(false)
     }

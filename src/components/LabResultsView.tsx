@@ -27,12 +27,15 @@ const LabResultsView: React.FC<LabResultsViewProps> = ({ rawData, patientId }) =
   const availableLabColumns = useMemo(() => {
     if (!filteredData || filteredData.length === 0) return []
     const firstRow = filteredData[0]
+    if (!firstRow) return []
+    
+    const allKeys = Object.keys(firstRow)
     return labColumns.filter(col => {
       const normalizedCol = col.toLowerCase()
-      return Object.keys(firstRow).some(key => 
-        key.toLowerCase() === normalizedCol || 
-        key.toLowerCase().includes(normalizedCol.toLowerCase())
-      )
+      return allKeys.some(key => {
+        const normalizedKey = key.toLowerCase()
+        return normalizedKey === normalizedCol || normalizedKey.includes(normalizedCol)
+      })
     })
   }, [filteredData])
 
@@ -51,37 +54,54 @@ const LabResultsView: React.FC<LabResultsViewProps> = ({ rawData, patientId }) =
 
       const data = filteredData
         .map(row => {
-          const date = row['enrollmentDate'] || row['enrollment_date'] || row['date'] || row['visitDate'] || row['visit_date']
-          const value = parseFloat(row[actualCol])
-          if (!date || isNaN(value)) return null
+          // Try multiple date column names
+          const date = row['enrollmentDate'] || row['enrollment_date'] || row['date'] || row['visitDate'] || row['visit_date'] || row['visit']
+          const value = parseFloat(String(row[actualCol] || '0'))
+          const patientId = row['patientId'] || row['patient_id'] || row['id'] || row['subjectId'] || ''
+          
+          if (!date || isNaN(value) || value === 0) return null
           return {
-            date: date.split('T')[0],
+            date: String(date).split('T')[0],
             value: value,
-            patientId: row['patientId'] || row['patient_id'] || row['id']
+            patientId: String(patientId)
           }
         })
-        .filter(item => item !== null)
-        .sort((a, b) => a!.date.localeCompare(b!.date))
+        .filter((item): item is NonNullable<typeof item> => item !== null)
+        .sort((a, b) => a.date.localeCompare(b.date))
 
       // Calculate trend
-      if (data.length < 2) return null
+      if (data.length < 2) {
+        // Still return data even if only one point
+        return {
+          name: labCol,
+          data: data.map(d => ({
+            date: d.date.split('-').slice(1).join('/'), // MM/DD format
+            value: d.value,
+            fullDate: d.date
+          })),
+          trend: 'stable' as const,
+          changePercent: '0.0',
+          currentValue: data[0]?.value || 0,
+          previousValue: null
+        }
+      }
 
-      const firstValue = data[0]!.value
-      const lastValue = data[data.length - 1]!.value
+      const firstValue = data[0].value
+      const lastValue = data[data.length - 1].value
       const trend = lastValue > firstValue ? 'up' : lastValue < firstValue ? 'down' : 'stable'
-      const changePercent = ((lastValue - firstValue) / firstValue) * 100
+      const changePercent = firstValue !== 0 ? ((lastValue - firstValue) / firstValue) * 100 : 0
 
       return {
         name: labCol,
         data: data.map(d => ({
-          date: d!.date.split('-').slice(1).join('/'), // MM/DD format
-          value: d!.value,
-          fullDate: d!.date
+          date: d.date.split('-').slice(1).join('/'), // MM/DD format
+          value: d.value,
+          fullDate: d.date
         })),
         trend,
         changePercent: Math.abs(changePercent).toFixed(1),
         currentValue: lastValue,
-        previousValue: data.length > 1 ? data[data.length - 2]!.value : null
+        previousValue: data.length > 1 ? data[data.length - 2].value : null
       }
     }).filter(item => item !== null && item.data.length > 0)
   }, [filteredData, availableLabColumns])

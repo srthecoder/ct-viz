@@ -188,23 +188,79 @@ const Dashboard: React.FC = () => {
       color: 'blue' as const
     })) || []
 
-  // Add dataset-level metrics
-  const datasetMetrics = [
+  // Check if we have lab, medication, or billing data (used for both metrics and tabs)
+  const hasLabData = useMemo(() => rawData.some(row => {
+    const keys = Object.keys(row).map(k => k.toLowerCase())
+    return keys.some(k => ['wbc', 'rbc', 'hemoglobin', 'hematocrit', 'platelets'].includes(k))
+  }), [rawData])
+  const hasMedicationData = useMemo(() => rawData.some(row => {
+    const keys = Object.keys(row).map(k => k.toLowerCase())
+    return keys.some(k => ['medication', 'drug', 'prescription', 'dosage'].includes(k))
+  }), [rawData])
+  const hasBillingData = useMemo(() => rawData.some(row => {
+    const keys = Object.keys(row).map(k => k.toLowerCase())
+    return keys.some(k => ['amount', 'cost', 'payment', 'billing', 'balance'].includes(k))
+  }), [rawData])
+
+  // Add dataset-level metrics - make them veterinary-relevant
+
+  const activePatients = clinicalData.patients.filter(p => p.status === 'Active' || p.status === 'active').length
+  const activePercent = clinicalData.patients.length > 0 
+    ? Math.round((activePatients / clinicalData.patients.length) * 100) 
+    : 0
+
+  const datasetMetrics: Array<{
+    title: string
+    value: string | number
+    subtitle: string
+    icon: React.ReactNode
+    color: 'blue' | 'green' | 'purple' | 'orange' | 'teal' | 'red'
+  }> = [
     {
-      title: 'Total Records',
-      value: insights?.rowCount || rawData.length,
-      subtitle: `${insights?.columnCount || 0} columns`,
+      title: 'Total Patients',
+      value: clinicalData.patients.length,
+      subtitle: `${clinicalData.sites.length} clinics`,
       icon: <Database className="h-5 w-5" />,
-      color: 'blue' as const
+      color: 'blue'
     },
     {
-      title: 'Complete Records',
-      value: insights?.columns.reduce((sum, col) => sum + col.count, 0) || 0,
-      subtitle: 'Total data points',
+      title: 'Active Patients',
+      value: activePatients,
+      subtitle: `${activePercent}% of total`,
       icon: <FileText className="h-5 w-5" />,
-      color: 'green' as const
+      color: 'green'
     }
   ]
+
+  if (hasLabData) {
+    datasetMetrics.push({
+      title: 'Lab Results',
+      value: 'Available',
+      subtitle: 'Blood tests tracked',
+      icon: <Activity className="h-5 w-5" />,
+      color: 'orange'
+    })
+  }
+
+  if (hasMedicationData) {
+    datasetMetrics.push({
+      title: 'Medications',
+      value: 'Tracked',
+      subtitle: 'Administration records',
+      icon: <Pill className="h-5 w-5" />,
+      color: 'blue'
+    })
+  }
+
+  if (hasBillingData) {
+    datasetMetrics.push({
+      title: 'Billing Data',
+      value: 'Available',
+      subtitle: 'Financial records',
+      icon: <DollarSign className="h-5 w-5" />,
+      color: 'green'
+    })
+  }
 
   // Get columns suitable for visualization (exclude IDs and low-cardinality text)
   const visualizableColumns = insights?.columns.filter(col => {
@@ -222,20 +278,6 @@ const Dashboard: React.FC = () => {
     (row?.patientId || row?.patient_id || row?.id) && 
     (row?.siteId || row?.site_id || row?.site)
   )
-
-  // Check if we have lab, medication, or billing data
-  const hasLabData = rawData.some(row => {
-    const keys = Object.keys(row).map(k => k.toLowerCase())
-    return keys.some(k => ['wbc', 'rbc', 'hemoglobin', 'hematocrit', 'platelets'].includes(k))
-  })
-  const hasMedicationData = rawData.some(row => {
-    const keys = Object.keys(row).map(k => k.toLowerCase())
-    return keys.some(k => ['medication', 'drug', 'prescription', 'dosage'].includes(k))
-  })
-  const hasBillingData = rawData.some(row => {
-    const keys = Object.keys(row).map(k => k.toLowerCase())
-    return keys.some(k => ['amount', 'cost', 'payment', 'billing', 'balance'].includes(k))
-  })
 
   return (
     <div className="space-y-6">
@@ -528,7 +570,7 @@ interface MetricCardProps {
   value: string | number
   subtitle?: string
   icon: React.ReactNode
-  color: 'blue' | 'green' | 'purple' | 'orange' | 'teal'
+  color: 'blue' | 'green' | 'purple' | 'orange' | 'teal' | 'red'
 }
 
 const MetricCard: React.FC<MetricCardProps> = ({ title, value, subtitle, icon, color }) => {
@@ -537,7 +579,8 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, subtitle, icon, c
     green: 'bg-green-100 text-green-600',
     purple: 'bg-purple-100 text-purple-600',
     orange: 'bg-orange-100 text-orange-600',
-    teal: 'bg-teal-100 text-teal-600'
+    teal: 'bg-teal-100 text-teal-600',
+    red: 'bg-red-100 text-red-600'
   }
 
   return (

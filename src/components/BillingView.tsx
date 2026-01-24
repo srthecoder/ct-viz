@@ -30,26 +30,29 @@ const BillingView: React.FC<BillingViewProps> = ({ rawData }) => {
     if (!hasBillingData) return []
 
     return rawData.map(row => {
-      // Try to find amount/cost column
-      const amount = parseFloat(
-        String(row['amount'] || row['cost'] || row['price'] || row['fee'] || row['charge'] || '0')
-      )
+      // Try to find amount/cost column - check multiple variations
+      const amountStr = row['amount'] || row['cost'] || row['price'] || row['fee'] || row['charge'] || '0'
+      const amount = parseFloat(String(amountStr))
       
-      const payment = String(row['payment'] || row['paid'] || '0')
-      const balance = parseFloat(String(row['balance'] || row['outstanding'] || '0'))
-      const status = String(row['paymentStatus'] || row['status'] || 'pending').toLowerCase()
-      const date = row['enrollmentDate'] || row['enrollment_date'] || row['date'] || row['visitDate'] || row['visit_date']
-      const patientId = row['patientId'] || row['patient_id'] || row['id']
+      const paymentStr = row['payment'] || row['paid'] || '0'
+      const payment = parseFloat(String(paymentStr))
+      
+      const balanceStr = row['balance'] || row['outstanding'] || '0'
+      const balance = parseFloat(String(balanceStr))
+      
+      const status = String(row['paymentStatus'] || row['paymentstatus'] || row['status'] || 'pending').toLowerCase()
+      const date = row['enrollmentDate'] || row['enrollment_date'] || row['date'] || row['visitDate'] || row['visit_date'] || row['visit']
+      const patientId = row['patientId'] || row['patient_id'] || row['id'] || row['subjectId'] || ''
 
       return {
         amount: isNaN(amount) ? 0 : amount,
-        payment: isNaN(parseFloat(payment)) ? 0 : parseFloat(payment),
+        payment: isNaN(payment) ? 0 : payment,
         balance: isNaN(balance) ? 0 : balance,
         status: status,
         date: date ? String(date).split('T')[0] : null,
         patientId: String(patientId)
       }
-    }).filter(item => item.amount > 0 || item.balance > 0)
+    }).filter(item => item.amount > 0 || item.balance > 0 || item.payment > 0)
   }, [rawData])
 
   // Financial summary

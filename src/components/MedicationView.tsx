@@ -29,22 +29,26 @@ const MedicationView: React.FC<MedicationViewProps> = ({ rawData }) => {
 
     // Try to extract medication information
     return rawData.map(row => {
-      const medication = row['medication'] || row['medicationName'] || row['drug'] || row['prescription'] || 'Unknown'
+      const medication = row['medication'] || row['medicationName'] || row['drug'] || row['prescription'] || row['medicationname'] || 'Unknown'
       const dosage = row['dosage'] || row['dose'] || 'N/A'
       const frequency = row['frequency'] || row['schedule'] || 'N/A'
       const administered = row['administered'] || row['compliance'] || row['adherence']
-      const date = row['enrollmentDate'] || row['enrollment_date'] || row['date'] || row['visitDate'] || row['visit_date']
-      const patientId = row['patientId'] || row['patient_id'] || row['id']
+      const date = row['enrollmentDate'] || row['enrollment_date'] || row['date'] || row['visitDate'] || row['visit_date'] || row['visit']
+      const patientId = row['patientId'] || row['patient_id'] || row['id'] || row['subjectId'] || ''
 
+      // Only include if we have actual medication data
+      const hasMedication = medication && medication !== 'Unknown' && medication !== 'None' && medication !== '0mg'
+      
       return {
         medication: String(medication),
         dosage: String(dosage),
         frequency: String(frequency),
         administered: administered !== null && administered !== undefined ? String(administered).toLowerCase() : 'unknown',
-        date: date ? date.split('T')[0] : null,
-        patientId: String(patientId)
+        date: date ? String(date).split('T')[0] : null,
+        patientId: String(patientId),
+        hasMedication
       }
-    }).filter(item => item.medication !== 'Unknown' || item.administered !== 'unknown')
+    }).filter(item => item.hasMedication)
   }, [rawData])
 
   // Medication distribution
