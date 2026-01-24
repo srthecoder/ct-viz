@@ -22,37 +22,20 @@ const ScrollReplacementContainer: React.FC<ScrollReplacementContainerProps> = ({
     
     setTimeout(() => {
       setIsTransitioning(false)
-    }, 600) // Match transition duration
+    }, 500) // Match transition duration
   }, [children.length, isTransitioning])
 
   useEffect(() => {
     let lastWheelTime = 0
-    const wheelCooldown = 800 // ms between section changes
+    const wheelCooldown = 500 // ms between section changes - faster for better UX
 
-    // Handle wheel events - convert vertical scroll to section navigation
+    // Handle wheel events - ALWAYS convert vertical scroll to section navigation
+    // Like Notion onboarding - scroll = next/previous step
     const handleWheel = (e: WheelEvent) => {
-      // Only handle if scrolling vertically
+      // Only handle vertical scrolling
       if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return
       
-      // Check if we're scrolling inside a scrollable element
-      const target = e.target as HTMLElement
-      const scrollableParent = target.closest('[data-scrollable]') as HTMLElement
-      
-      if (scrollableParent) {
-        const isAtTop = scrollableParent.scrollTop <= 0
-        const isAtBottom = scrollableParent.scrollTop + scrollableParent.clientHeight >= scrollableParent.scrollHeight - 1
-        
-        // If scrolling down and not at bottom, allow normal scroll
-        if (e.deltaY > 0 && !isAtBottom) {
-          return // Let it scroll normally
-        }
-        // If scrolling up and not at top, allow normal scroll
-        if (e.deltaY < 0 && !isAtTop) {
-          return // Let it scroll normally
-        }
-      }
-      
-      // Otherwise, prevent default and trigger section change
+      // Always prevent default scrolling
       e.preventDefault()
       e.stopPropagation()
       
@@ -62,16 +45,16 @@ const ScrollReplacementContainer: React.FC<ScrollReplacementContainerProps> = ({
       if (now - lastWheelTime < wheelCooldown) return
 
       const delta = e.deltaY
-      const threshold = 30 // Minimum scroll delta to trigger
+      const threshold = 20 // Lower threshold for more responsive scrolling
 
       if (Math.abs(delta) < threshold) return
 
       if (delta > 0 && currentIndex < children.length - 1) {
-        // Scroll down - next section
+        // Scroll down - next section (step)
         lastWheelTime = now
         goToSection(currentIndex + 1)
       } else if (delta < 0 && currentIndex > 0) {
-        // Scroll up - previous section
+        // Scroll up - previous section (step)
         lastWheelTime = now
         goToSection(currentIndex - 1)
       }
@@ -128,14 +111,15 @@ const ScrollReplacementContainer: React.FC<ScrollReplacementContainerProps> = ({
     // Prevent body scroll
     document.body.style.overflow = 'hidden'
     
-    window.addEventListener('wheel', handleWheel, { passive: false, capture: true })
+    // Use capture phase to catch events before they bubble
+    document.addEventListener('wheel', handleWheel, { passive: false, capture: true })
     window.addEventListener('touchstart', handleTouchStart, { passive: true })
     window.addEventListener('touchend', handleTouchEnd, { passive: true })
     window.addEventListener('keydown', handleKeyDown)
     
     return () => {
       document.body.style.overflow = ''
-      window.removeEventListener('wheel', handleWheel, { capture: true })
+      document.removeEventListener('wheel', handleWheel, { capture: true })
       window.removeEventListener('touchstart', handleTouchStart)
       window.removeEventListener('touchend', handleTouchEnd)
       window.removeEventListener('keydown', handleKeyDown)
@@ -201,13 +185,13 @@ const ScrollReplacementContainer: React.FC<ScrollReplacementContainerProps> = ({
             key={index}
             className={`absolute inset-0 w-full h-full ${
               index === currentIndex
-                ? 'opacity-100 translate-x-0 z-10 pointer-events-auto'
+                ? 'opacity-100 translate-y-0 z-10 pointer-events-auto'
                 : index < currentIndex
-                ? 'opacity-0 -translate-x-full z-0 pointer-events-none'
-                : 'opacity-0 translate-x-full z-0 pointer-events-none'
+                ? 'opacity-0 -translate-y-full z-0 pointer-events-none'
+                : 'opacity-0 translate-y-full z-0 pointer-events-none'
             }`}
             style={{
-              transition: 'opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+              transition: 'opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
               willChange: index === currentIndex ? 'auto' : 'transform, opacity'
             }}
           >
