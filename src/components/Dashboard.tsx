@@ -7,6 +7,7 @@ import LandingPage from './LandingPage'
 import LabResultsView from './LabResultsView'
 import MedicationView from './MedicationView'
 import BillingView from './BillingView'
+import CollapsibleSection from './CollapsibleSection'
 import { 
   Database,
   TrendingUp,
@@ -17,7 +18,8 @@ import {
   X,
   Activity,
   Pill,
-  DollarSign
+  DollarSign,
+  Building2
 } from 'lucide-react'
 
 const Dashboard: React.FC = () => {
@@ -370,10 +372,14 @@ const Dashboard: React.FC = () => {
       )}
 
       {activeTab === 'overview' && (
-        <>
-
+        <div className="space-y-4">
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+      <CollapsibleSection
+        title="Filters"
+        icon={<Filter className="h-5 w-5" />}
+        defaultOpen={false}
+        badge={hasActiveFilters ? `${filteredRawData.length}/${rawData.length}` : undefined}
+      >
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2">
             <Filter className="h-5 w-5 text-gray-500" />
@@ -444,12 +450,15 @@ const Dashboard: React.FC = () => {
             </div>
           )}
         </div>
-      </div>
+      </CollapsibleSection>
 
       {/* Dataset Overview */}
       {insights && (
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Dataset Overview</h3>
+        <CollapsibleSection
+          title="Overview Metrics"
+          icon={<BarChart3 className="h-5 w-5" />}
+          defaultOpen={true}
+        >
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {datasetMetrics.map((metric, idx) => (
               <MetricCard key={idx} {...metric} />
@@ -458,16 +467,18 @@ const Dashboard: React.FC = () => {
               <MetricCard key={`dynamic-${idx}`} {...metric} />
             ))}
           </div>
-        </div>
+        </CollapsibleSection>
       )}
 
       {/* Key Insights */}
       {insights && insights.highlights.length > 0 && (
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-sm p-6 border border-blue-200">
-          <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
-            <BarChart3 className="h-5 w-5 mr-2 text-primary-600" />
-            Key Insights
-          </h3>
+        <CollapsibleSection
+          title="Key Insights"
+          icon={<BarChart3 className="h-5 w-5" />}
+          defaultOpen={false}
+          badge={insights.highlights.length}
+          className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200"
+        >
           <ul className="space-y-2">
             {insights.highlights.slice(0, 6).map((highlight, i) => (
               <li key={i} className="text-sm text-gray-700 flex items-start">
@@ -476,20 +487,21 @@ const Dashboard: React.FC = () => {
               </li>
             ))}
           </ul>
-        </div>
+        </CollapsibleSection>
       )}
 
       {/* Adaptive Visualizations */}
       {visualizableColumns.length > 0 && (
-        <>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-            <h3 className="text-xl font-semibold text-gray-900">Data Visualizations</h3>
-            <p className="text-sm text-gray-500">
-              {visualizableColumns.length} charts generated from your data
-              {hasActiveFilters && ` (filtered: ${filteredRawData.length} records)`}
-            </p>
-          </div>
-          
+        <CollapsibleSection
+          title="Data Visualizations"
+          icon={<BarChart3 className="h-5 w-5" />}
+          defaultOpen={true}
+          badge={visualizableColumns.length}
+        >
+          <p className="text-sm text-gray-500 mb-4">
+            {visualizableColumns.length} charts generated from your data
+            {hasActiveFilters && ` (filtered: ${filteredRawData.length} records)`}
+          </p>
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-6">
             {visualizableColumns.map((column) => (
               <AdaptiveChart
@@ -499,13 +511,17 @@ const Dashboard: React.FC = () => {
               />
             ))}
           </div>
-        </>
+        </CollapsibleSection>
       )}
 
       {/* Clinical-specific section (only if structure matches) */}
       {hasClinicalStructure && clinicalData.sites.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Clinic Performance</h3>
+        <CollapsibleSection
+          title="Clinic Performance"
+          icon={<Building2 className="h-5 w-5" />}
+          defaultOpen={false}
+          badge={clinicalData.sites.length}
+        >
           <div className="overflow-x-auto -mx-6 px-6">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -557,9 +573,9 @@ const Dashboard: React.FC = () => {
               </tbody>
             </table>
           </div>
-        </div>
+        </CollapsibleSection>
       )}
-        </>
+        </div>
       )}
     </div>
   )

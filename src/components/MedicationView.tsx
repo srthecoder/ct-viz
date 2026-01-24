@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react'
-import { Pill, Calendar, CheckCircle2 } from 'lucide-react'
+import { Pill, Calendar, CheckCircle2, BarChart3 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import CollapsibleSection from './CollapsibleSection'
 
 interface MedicationViewProps {
   rawData: any[]
@@ -119,19 +120,15 @@ const MedicationView: React.FC<MedicationViewProps> = ({ rawData }) => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-          <Pill className="h-6 w-6 text-blue-600" />
-          Medication Administration Records
-        </h3>
-        <div className="text-sm text-gray-600">
-          {medicationData.length} records
-        </div>
-      </div>
-
+    <div className="space-y-4">
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <CollapsibleSection
+        title="Medication Summary"
+        icon={<Pill className="h-5 w-5 text-blue-600" />}
+        defaultOpen={true}
+        badge={medicationData.length}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
@@ -161,10 +158,16 @@ const MedicationView: React.FC<MedicationViewProps> = ({ rawData }) => {
             <CheckCircle2 className="h-8 w-8 text-green-600" />
           </div>
         </div>
-      </div>
+        </div>
+      </CollapsibleSection>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <CollapsibleSection
+        title="Medication Analysis"
+        icon={<BarChart3 className="h-5 w-5" />}
+        defaultOpen={true}
+      >
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Medication Distribution */}
         {medicationDistribution.length > 0 && (
           <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
@@ -206,12 +209,16 @@ const MedicationView: React.FC<MedicationViewProps> = ({ rawData }) => {
             </ResponsiveContainer>
           </div>
         )}
-      </div>
+        </div>
+      </CollapsibleSection>
 
       {/* Medication Timeline */}
       {medicationTimeline.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-          <h4 className="font-semibold text-gray-900 mb-4">Medication Administration Timeline</h4>
+        <CollapsibleSection
+          title="Medication Timeline"
+          icon={<Calendar className="h-5 w-5" />}
+          defaultOpen={false}
+        >
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={medicationTimeline}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -221,7 +228,7 @@ const MedicationView: React.FC<MedicationViewProps> = ({ rawData }) => {
               <Bar dataKey="count" fill="#8b5cf6" />
             </BarChart>
           </ResponsiveContainer>
-        </div>
+        </CollapsibleSection>
       )}
     </div>
   )

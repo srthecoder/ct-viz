@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react'
 import { Activity, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import CollapsibleSection from './CollapsibleSection'
 
 interface LabResultsViewProps {
   rawData: any[]
@@ -119,17 +120,15 @@ const LabResultsView: React.FC<LabResultsViewProps> = ({ rawData, patientId }) =
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-          <Activity className="h-6 w-6 text-red-600" />
-          Lab Results Analysis
-          {patientId && <span className="text-sm font-normal text-gray-500">(Patient: {patientId})</span>}
-        </h3>
-      </div>
-
+    <div className="space-y-4">
       {/* Lab Result Cards with Trends */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <CollapsibleSection
+        title="Lab Results Summary"
+        icon={<Activity className="h-5 w-5 text-red-600" />}
+        defaultOpen={true}
+        badge={labTimeSeries.length}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {labTimeSeries.map((lab, idx) => {
           if (!lab) return null
           
@@ -173,11 +172,18 @@ const LabResultsView: React.FC<LabResultsViewProps> = ({ rawData, patientId }) =
             </div>
           )
         })}
-      </div>
+        </div>
+      </CollapsibleSection>
 
       {/* Detailed Time Series Charts */}
       {labTimeSeries.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <CollapsibleSection
+          title="Detailed Lab Trends"
+          icon={<TrendingUp className="h-5 w-5" />}
+          defaultOpen={false}
+          badge={labTimeSeries.slice(0, 4).length}
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {labTimeSeries.slice(0, 4).map((lab, idx) => {
             if (!lab || lab.data.length < 2) return null
             return (
@@ -202,7 +208,8 @@ const LabResultsView: React.FC<LabResultsViewProps> = ({ rawData, patientId }) =
               </div>
             )
           })}
-        </div>
+          </div>
+        </CollapsibleSection>
       )}
     </div>
   )
