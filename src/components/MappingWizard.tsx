@@ -107,7 +107,7 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
   )
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-lg">
+    <div className="bg-white border border-gray-200 rounded-lg shadow-lg w-full">
       <div className="flex items-center justify-between border-b border-gray-200 p-4">
         <div>
           <p className="text-xs uppercase tracking-wide text-primary-600 font-semibold">Step 2</p>
@@ -125,7 +125,7 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
         </button>
       </div>
 
-      <div className="p-4 space-y-4">
+      <div className="p-4 space-y-4 w-full">
         {missingConcepts.length > 0 ? (
           <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
             <div className="flex items-start space-x-2">
@@ -156,8 +156,12 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
           </div>
         )}
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
+        <div className="overflow-x-auto w-full">
+          <table className="w-full table-fixed divide-y divide-gray-200 text-sm">
+            <colgroup>
+              <col className="w-3/5" />
+              <col className="w-2/5" />
+            </colgroup>
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-2 text-left font-medium text-gray-600">Column Name & Concept</th>
@@ -174,8 +178,8 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
                 return (
                   <tr key={mapping.columnName} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="flex-1">
+                      <div className="flex items-start gap-4">
+                        <div className="flex-1 min-w-0">
                           <input
                             type="text"
                             value={mapping.displayName}
@@ -193,10 +197,10 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
                           )}
                         </div>
                         
-                        <div className="flex items-center gap-2 min-w-[280px]">
+                        <div className="flex items-center gap-2 w-full max-w-xs">
                           {hasConcept ? (
-                            <div className="flex items-center gap-2 flex-1">
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary-50 text-primary-700 text-sm font-medium border border-primary-200">
+                            <div className="flex items-center gap-2 w-full">
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary-50 text-primary-700 text-sm font-medium border border-primary-200 whitespace-nowrap">
                                 {conceptDefinition?.label}
                                 <button
                                   onClick={() => handleConceptChange(mapping.columnName, undefined)}
@@ -208,8 +212,8 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
                               </span>
                             </div>
                           ) : isOther ? (
-                            <div className="flex items-center gap-2 flex-1">
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-purple-50 text-purple-700 text-sm font-medium border border-purple-200">
+                            <div className="flex items-center gap-2 w-full">
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-purple-50 text-purple-700 text-sm font-medium border border-purple-200 whitespace-nowrap">
                                 Other
                                 <button
                                   onClick={() => handleConceptChange(mapping.columnName, undefined)}
@@ -221,8 +225,8 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
                               </span>
                             </div>
                           ) : isIgnored ? (
-                            <div className="flex items-center gap-2 flex-1">
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-gray-50 text-gray-700 text-sm font-medium border border-gray-200">
+                            <div className="flex items-center gap-2 w-full">
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-gray-50 text-gray-700 text-sm font-medium border border-gray-200 whitespace-nowrap">
                                 Ignore
                                 <button
                                   onClick={() => handleConceptChange(mapping.columnName, undefined)}
@@ -234,7 +238,7 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
                               </span>
                             </div>
                           ) : (
-                            <div className="relative flex-1">
+                            <div className="relative w-full">
                               <select
                                 className="appearance-none w-full rounded-md border border-gray-300 bg-white px-3 py-2 pr-8 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
                                 value={mapping.concept || 'other'}
@@ -259,7 +263,7 @@ const MappingWizard: React.FC<MappingWizardProps> = ({ rawData, onConfirm, onCan
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       {hasConcept ? (
                         mapping.autoMatched ? (
                           <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
