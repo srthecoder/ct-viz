@@ -199,12 +199,16 @@ const LandingPage: React.FC = () => {
       <div className="bg-blue-600 rounded-xl shadow-lg p-8 text-center text-white">
         <h2 className="text-2xl font-bold mb-4">Ready to Get Started?</h2>
         <p className="text-blue-100 mb-6 max-w-2xl mx-auto">
-          Upload your data now and see how Vet-Viz can transform your practice management. 
+          Scroll up to upload your data and see how Vet-Viz can transform your practice management. 
           No credit card required, works with any CSV format.
         </p>
-        <div className="flex justify-center">
-          <DataUpload />
-        </div>
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="inline-flex items-center px-6 py-3 rounded-md text-sm font-medium text-blue-600 bg-white hover:bg-blue-50 transition-colors"
+        >
+          <Upload className="h-4 w-4 mr-2" />
+          Upload Data
+        </button>
       </div>
     </div>
   )
